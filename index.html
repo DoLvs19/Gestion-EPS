@@ -1,0 +1,3846 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outil EPS — Dodo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1C2B33;
+    --ink-soft: #445059;
+    --tatami: #3C6E58;
+    --tatami-dark: #2A4E3F;
+    --chalk: #F7F5F0;
+    --chalk-card: #FFFFFF;
+    --line: #DEDAD0;
+    --gold: #C8914E;
+    --gold-soft: #F0DEC3;
+    --danger: #B4483A;
+    --danger-soft: #F3DDD8;
+    --amber: #B98A2E;
+    --amber-soft: #F2E5C8;
+    --slate: #5B6B76;
+    --slate-soft: #E4E9EB;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EDEAE2;
+      --ink-soft: #B9C1C6;
+      --chalk: #14201F;
+      --chalk-card: #1C2A28;
+      --line: #33433F;
+      --gold-soft: #3A2E1E;
+      --danger-soft: #3A2521;
+      --amber-soft: #3A2E14;
+      --slate-soft: #2A363B;
+      --tatami: #5B9679;
+      --tatami-dark: #4A7C63;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #EDEAE2;
+    --ink-soft: #B9C1C6;
+    --chalk: #14201F;
+    --chalk-card: #1C2A28;
+    --line: #33433F;
+    --gold-soft: #3A2E1E;
+    --danger-soft: #3A2521;
+    --amber-soft: #3A2E14;
+    --slate-soft: #2A363B;
+    --tatami: #5B9679;
+    --tatami-dark: #4A7C63;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--chalk);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.5;
+    padding: 0 0 60px;
+  }
+
+  header.top {
+    background: var(--tatami-dark);
+    color: #F4F1E8;
+    padding: 24px 20px 18px;
+    border-bottom: 4px solid var(--gold);
+  }
+  .top-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 1.6rem;
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+  .subtitle { color: #D9E6DE; font-size: 0.9rem; margin-top: 4px; }
+  .sync-status { font-size: 0.78rem; color: #D9E6DE; white-space: nowrap; }
+
+  nav.tabs {
+    background: var(--chalk-card);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .tabs-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 14px;
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 13px 16px 11px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--tatami-dark); border-bottom-color: var(--tatami); }
+
+  main, .page {
+    max-width: 1000px;
+    margin: 24px auto 0;
+    padding: 0 20px;
+  }
+
+  .card {
+    background: var(--chalk-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px 20px;
+  }
+  .card + .card { margin-top: 20px; }
+
+  h2 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .card-note { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 16px; }
+
+  .class-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .class-row select#classSelectHome,
+  .class-row select#classSelectTeam {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    padding: 8px 12px;
+    min-width: 140px;
+  }
+  .date-input {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+  }
+
+  input[type="text"], input[type="date"], select, input[type="number"] {
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 9px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--chalk);
+    color: var(--ink);
+  }
+  input[type="text"]:focus, input[type="date"]:focus, select:focus, input[type="number"]:focus {
+    outline: 2px solid var(--tatami);
+    outline-offset: 1px;
+  }
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 8px 14px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    background: var(--tatami);
+    color: #fff;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--tatami-dark); }
+  .btn.secondary { background: transparent; color: var(--tatami-dark); border: 1px solid var(--tatami); }
+  .btn.secondary:hover { background: var(--gold-soft); }
+  .btn.danger-outline { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn.danger-outline:hover { background: var(--danger-soft); }
+  .btn.ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--tatami); color: var(--tatami-dark); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .add-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .add-form input[type="text"] { flex: 1 1 200px; min-width: 140px; }
+
+  .summary-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 0.82rem; }
+  .summary-chip { padding: 4px 10px; border-radius: 20px; background: var(--slate-soft); color: var(--ink-soft); }
+  .summary-chip.warn { background: var(--danger-soft); color: var(--danger); }
+  .summary-chip.amberc { background: var(--amber-soft); color: var(--amber); }
+
+  .roster-empty {
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    padding: 14px 0;
+    text-align: center;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+  }
+  .roster { display: flex; flex-direction: column; gap: 6px; }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--chalk);
+    flex-wrap: wrap;
+  }
+  .row .name { font-weight: 600; font-size: 0.92rem; flex: 1 1 140px; }
+  .row .rank-num { font-size: 0.78rem; color: var(--gold); font-weight: 700; min-width: 26px; }
+
+  .chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip-toggle {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--chalk-card);
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip-toggle.absent.on { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .chip-toggle.dispense.on { background: var(--amber); border-color: var(--amber); color: #fff; }
+  .chip-toggle.oubli.on { background: var(--slate); border-color: var(--slate); color: #fff; }
+
+  .row .level-select { padding: 6px 8px; font-size: 0.86rem; }
+  .row .rank-input { width: 70px; text-align: center; font-weight: 700; padding: 6px 8px; }
+
+  .del-btn {
+    background: none; border: none; color: var(--danger); font-size: 1.05rem;
+    cursor: pointer; line-height: 1; padding: 4px 6px; border-radius: 6px;
+  }
+  .del-btn:hover { background: var(--danger-soft); }
+
+  .roster-footer { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .roster-count { font-size: 0.82rem; color: var(--ink-soft); }
+
+  /* --- Recap table --- */
+  .recap-wrap { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+  table.recap-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.recap-table th, table.recap-table td {
+    text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line);
+  }
+  table.recap-table th { color: var(--ink-soft); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  table.recap-table td.num { text-align: center; font-weight: 600; }
+  .recap-note { font-size: 0.78rem; color: var(--ink-soft); margin-top: 8px; }
+
+  /* --- Sport picker --- */
+  .sport-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 560px) { .sport-grid { grid-template-columns: repeat(2, 1fr); } }
+  .sport-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 12px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--chalk);
+    color: var(--ink-soft);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .sport-btn span.emoji { font-size: 1.3rem; }
+  .sport-btn:hover { border-color: var(--tatami); }
+  .sport-btn.active { background: var(--tatami); border-color: var(--tatami); color: #fff; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+  .num-input { display: flex; align-items: center; gap: 8px; }
+  .num-input input[type="number"] { width: 70px; text-align: center; font-weight: 600; }
+  .num-input .hint { font-size: 0.78rem; color: var(--ink-soft); }
+  .mode-toggle { display: flex; border: 1px solid var(--tatami); border-radius: 7px; overflow: hidden; max-width: 320px; }
+  .mode-toggle button {
+    flex: 1; font-family: 'Inter', sans-serif; font-size: 0.86rem; font-weight: 600;
+    padding: 9px 6px; border: none; background: var(--chalk-card); color: var(--tatami-dark); cursor: pointer;
+  }
+  .mode-toggle button.active { background: var(--tatami); color: #fff; }
+  .mode-hint { font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px; line-height: 1.4; }
+  .generate-btn { padding: 12px 20px; font-size: 1rem; }
+  .status-msg { font-size: 0.85rem; color: var(--danger); margin-top: 8px; }
+
+  #teamsOutput { margin-top: 22px; }
+  .teams-meta { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 12px; }
+  .teams-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .team-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--chalk-card); overflow: hidden; }
+  .team-head { background: var(--gold-soft); padding: 10px 14px; display: flex; justify-content: space-between; align-items: baseline; }
+  .team-head .t-name { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 1rem; color: var(--ink); }
+  .team-head .t-avg { font-size: 0.78rem; color: var(--ink-soft); }
+  .team-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .t-player { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; gap: 8px; }
+  .t-level { display: inline-flex; gap: 2px; }
+  .t-rank { font-size: 0.8rem; color: var(--gold); font-weight: 700; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+  .dot.filled { background: var(--gold); }
+  .absent-note { margin-top: 16px; font-size: 0.82rem; color: var(--ink-soft); }
+
+  .panel-placeholder { margin: 30px auto 0; }
+  .placeholder-card {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .placeholder-card .placeholder-icon { font-size: 2rem; margin-bottom: 10px; }
+  .placeholder-card h2 { justify-content: center; color: var(--ink); }
+  .placeholder-card p { max-width: 480px; margin: 10px auto 0; font-size: 0.92rem; line-height: 1.5; }
+
+  footer {
+    max-width: 1000px;
+    margin: 30px auto 0;
+    padding: 0 20px;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  ::-webkit-scrollbar { height: 6px; width: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  @media print {
+    body > *:not(#printOverlay) { display: none !important; }
+    #printOverlay #printBtn, #printOverlay #closePrintBtn { display: none !important; }
+  }
+
+</style>
+<style>
+#loginOverlay{position:fixed;inset:0;z-index:9999;background:#faf9f5;display:flex;align-items:center;justify-content:center;padding:16px}
+#loginOverlay .box{background:#fff;border:1px solid #ddd;border-radius:14px;padding:24px;width:100%;max-width:340px;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+#loginOverlay h2{margin:0 0 4px;font-size:1.2rem}
+#loginOverlay input{width:100%;box-sizing:border-box;padding:10px;margin:8px 0;border:1px solid #bbb;border-radius:8px;font-size:1rem}
+#loginOverlay button{width:100%;padding:11px;border:0;border-radius:8px;background:#2f6b4f;color:#fff;font-size:1rem;cursor:pointer}
+#loginMsg{font-size:.85rem;color:#a33;min-height:1.2em;margin-top:8px}
+</style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="loginOverlay"><form class="box" id="loginForm">
+<h2>Outil EPS</h2><div style="color:#666;font-size:.9rem">Accès privé</div>
+<input id="loginEmail" type="email" placeholder="E-mail" autocomplete="username" required>
+<input id="loginPassword" type="password" placeholder="Mot de passe" autocomplete="current-password" required>
+<button type="submit">Se connecter</button><div id="loginMsg"></div></form></div>
+
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <h1>Outil EPS</h1>
+      <div class="subtitle">Assiduité, équipes et évaluation</div>
+    </div>
+    <span id="syncStatus" class="sync-status" title="État de la synchronisation">⏳ Connexion…</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" data-tab="accueil" type="button">🏠 Accueil</button>
+    <button class="tab-btn" data-tab="equipe" type="button">⚡ Équipe</button>
+    <button class="tab-btn" data-tab="evaluation" type="button">📝 Évaluation</button>
+    <button class="tab-btn" data-tab="escalade" type="button">🧗 Escalade</button>
+    <button class="tab-btn" data-tab="trail" type="button">🏃 Trail</button>
+  </div>
+</nav>
+
+<!-- ===================== ACCUEIL ===================== -->
+<div id="panel-accueil" class="page">
+  <div class="card">
+    <h2>Assiduité</h2>
+    <p class="card-note">Cochez absent, dispensé ou oubli de tenue pour la date sélectionnée.</p>
+
+    <div class="class-row">
+      <select id="classSelectHome" aria-label="Classe"></select>
+      <input type="date" id="sessionDate" class="date-input" aria-label="Date de la séance">
+      <button class="btn ghost" id="addClassBtnHome" type="button">+ Classe</button>
+      <button class="btn danger-outline" id="deleteClassBtnHome" type="button" style="display:none;">Supprimer la classe</button>
+      <button class="btn secondary" id="resetSessionBtn" type="button">↻ Effacer cette date</button>
+    </div>
+
+    <div class="summary-row" id="summaryRow"></div>
+
+    <form class="add-form" id="addForm">
+      <input type="text" id="studentName" placeholder="Nom / prénom de l'élève" autocomplete="off" required>
+      <button class="btn" type="submit">Ajouter</button>
+    </form>
+
+    <div id="rosterEmptyHome" class="roster-empty">Aucun élève dans cette classe.</div>
+    <div id="rosterHome" class="roster"></div>
+    <div class="roster-footer">
+      <span class="roster-count" id="rosterCountHome"></span>
+      <button class="btn ghost" id="toggleRecapBtn" type="button">📊 Voir le récap</button>
+    </div>
+
+    <div id="recapWrap" class="recap-wrap" style="display:none;">
+      <h2 style="font-size:0.95rem;">Récapitulatif — <span id="recapClassLabel"></span></h2>
+      <p class="card-note" style="margin-bottom:10px;">Cliquez sur un élève pour voir son détail séance par séance.</p>
+      <div id="recapContent"></div>
+      <div id="recapDetail"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ÉQUIPE ===================== -->
+<div id="panel-equipe" class="page" hidden>
+  <div class="card">
+    <h2>Choix de la classe et de la pratique</h2>
+    <p class="card-note">Séance du <strong id="teamDateLabel"></strong> — modifiable dans l'onglet Accueil.</p>
+    <div class="class-row">
+      <select id="classSelectTeam" aria-label="Classe"></select>
+    </div>
+    <div class="sport-grid" id="sportGrid">
+      <button type="button" class="sport-btn" data-sport="badminton"><span class="emoji">🏸</span>Badminton</button>
+      <button type="button" class="sport-btn" data-sport="volley"><span class="emoji">🏐</span>Volley</button>
+      <button type="button" class="sport-btn" data-sport="basket3x3"><span class="emoji">🏀</span>Basket 3x3</button>
+      <button type="button" class="sport-btn" data-sport="rugby"><span class="emoji">🏉</span>Rugby</button>
+    </div>
+  </div>
+
+  <div class="card" id="levelsCard" style="display:none;">
+    <h2 id="levelsCardTitle">Niveaux — <span id="levelsSportLabel"></span></h2>
+    <p class="card-note" id="levelsCardNote">Les élèves absents ou dispensés sont grisés et exclus du tirage.</p>
+    <div id="rosterEmptyTeam" class="roster-empty" style="display:none;">Aucun élève dans cette classe.</div>
+    <div id="rosterTeam" class="roster"></div>
+  </div>
+
+  <div class="card" id="composeCard" style="display:none;">
+    <h2>Composition des équipes</h2>
+    <div class="field-group">
+      <label for="teamSize">Joueurs par équipe</label>
+      <div class="num-input">
+        <input type="number" id="teamSize" min="1" max="30" value="4">
+        <span class="hint" id="teamSizeHint"></span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Répartition</label>
+      <div class="mode-toggle">
+        <button type="button" id="modeHetero" class="active" data-mode="hetero">Hétérogène</button>
+        <button type="button" id="modeHomo" data-mode="homo">Homogène</button>
+      </div>
+      <div class="mode-hint" id="modeHint">Équipes équilibrées : chaque équipe mélange des niveaux différents.</div>
+    </div>
+    <button class="btn generate-btn" id="generateBtn">Générer les équipes</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div id="teamsOutput"></div>
+</div>
+
+<!-- ===================== ÉVALUATION ===================== -->
+<div id="panel-evaluation" class="page" hidden>
+  <div class="card">
+    <h2>Évaluation</h2>
+    <p class="card-note">Choisissez la pratique.</p>
+    <div class="sport-grid" id="evalSportGrid" style="grid-template-columns:repeat(4,1fr);">
+      <button type="button" class="sport-btn active" data-eval-sport="badminton"><span class="emoji">🏸</span>Badminton</button>
+      <button type="button" class="sport-btn" data-eval-sport="rugby"><span class="emoji">🏉</span>Rugby</button>
+      <button type="button" class="sport-btn" data-eval-sport="basket3x3"><span class="emoji">🏀</span>Basket 3x3</button>
+      <button type="button" class="sport-btn" data-eval-sport="escalade"><span class="emoji">🧗</span>Escalade</button>
+    </div>
+  </div>
+
+  <div class="card" id="evalNiveauCard">
+    <h2>Niveau</h2>
+    <div class="mode-toggle" id="niveauToggle" style="max-width:340px;">
+      <button type="button" id="niveauBac" class="active" data-niveau="bac">Bac</button>
+      <button type="button" id="niveauCollege" data-niveau="college">4ème / 3ème</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Classe</h2>
+    <div class="class-row">
+      <select id="classSelectEval" aria-label="Classe"></select>
+      <button class="btn secondary" id="exportAllBtn" type="button" style="display:none;">📦 Export complet de la classe</button>
+    </div>
+    <p class="card-note" id="evalExportNote" style="display:none;">Export possible pour chaque élève, ou pour toute la classe en un seul document (comme la grille CCF).</p>
+    <div id="evalRosterEmpty" class="roster-empty" style="display:none;">Aucun élève dans cette classe.</div>
+    <div id="evalRoster" class="roster"></div>
+  </div>
+</div>
+
+<!-- ===================== ESCALADE ===================== -->
+<div id="panel-escalade" class="page" hidden>
+  <div class="card">
+    <h2>Escalade</h2>
+    <div class="class-row">
+      <select id="classSelectClimb" aria-label="Classe"></select>
+      <input type="date" id="climbDate" class="date-input" aria-label="Date de la séance">
+    </div>
+    <div class="summary-row" id="climbSummaryRow"></div>
+    <div id="climbRosterEmpty" class="roster-empty" style="display:none;">Aucun élève dans cette classe.</div>
+    <div id="climbRoster" class="roster"></div>
+    <div class="roster-footer">
+      <span></span>
+      <button class="btn ghost" id="toggleClimbRecapBtn" type="button">📊 Voir le récap</button>
+    </div>
+    <div id="climbRecapWrap" class="recap-wrap" style="display:none;">
+      <h2 style="font-size:0.95rem;">Récapitulatif — <span id="climbRecapClassLabel"></span></h2>
+      <p class="card-note" style="margin-bottom:10px;">Cliquez sur un élève pour voir le détail de chaque séance.</p>
+      <div id="climbRecapContent"></div>
+      <div id="climbRecapDetail"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TRAIL ===================== -->
+<div id="panel-trail" class="page" hidden>
+  <div class="card">
+    <h2>Trail</h2>
+    <p class="card-note">Entrez la distance, le dénivelé et le temps de chaque élève. L'allure au km est calculée automatiquement et sert à classer les élèves.</p>
+    <div class="class-row">
+      <select id="classSelectTrail" aria-label="Classe"></select>
+      <input type="date" id="trailDate" class="date-input" aria-label="Date de la séance">
+    </div>
+    <div class="summary-row" id="trailSummaryRow"></div>
+    <div id="trailRanking"></div>
+    <div id="trailRosterEmpty" class="roster-empty" style="display:none;">Aucun élève dans cette classe.</div>
+    <div id="trailRoster" class="roster"></div>
+    <div class="roster-footer">
+      <span></span>
+      <button class="btn ghost" id="toggleTrailRecapBtn" type="button">📊 Voir le récap</button>
+    </div>
+    <div id="trailRecapWrap" class="recap-wrap" style="display:none;">
+      <h2 style="font-size:0.95rem;">Récapitulatif — <span id="trailRecapClassLabel"></span></h2>
+      <p class="card-note" style="margin-bottom:10px;">Cliquez sur un élève pour voir le détail de chaque sortie.</p>
+      <div id="trailRecapContent"></div>
+      <div id="trailRecapDetail"></div>
+    </div>
+  </div>
+</div>
+
+<footer><div style="margin-bottom:8px;"><button type="button" id="backupBtn" class="sport-btn" style="flex:none;font-size:0.8rem;padding:6px 12px;">💾 Sauvegardes / restaurer</button></div><div id="backupPanel" style="display:none;margin:8px 0;text-align:left;"></div>Données privées, enregistrées dans votre base Supabase. <span style="opacity:0.5;">build 2026-10-08</span></footer>
+
+
+<script>
+(function() {
+  const STORAGE_PREFIX = "eps-classes";
+  const SCHEMA_VERSION = 6;
+  const SPORTS = ['badminton', 'volley', 'basket3x3', 'rugby'];
+  const SPORT_TEAM_SIZE = { badminton: 2, volley: 6, basket3x3: 3, rugby: 7 };
+  const SPORT_LABEL = { badminton: 'Badminton', volley: 'Volley', basket3x3: 'Basket 3x3', rugby: 'Rugby' };
+  const RANK_SPORTS = { badminton: true }; // ces sports utilisent un classement libre au lieu d'un niveau 1-5
+
+
+  // ---- Grilles d'évaluation Badminton (issues des grilles fournies par Dodo) ----
+  const EVAL_BAC = {
+    aflp1: {
+      label: 'AFLP 1 : Choix tactiques & Marque', max: 7,
+      degres: [
+        { d: 1, text: "Renvoie sans prendre en compte l'adversaire. Aucun volant favorable exploité.", range: [0, 1] },
+        { d: 2, text: "Renvoie parfois dans l'espace libre mais ne profite pas de la situation.", range: [1.5, 3] },
+        { d: 3, text: "Attaque régulièrement dans l'espace libre. Majorité des volants favorables exploités.", range: [3.5, 5] },
+        { d: 4, text: "Attaque toujours dans un espace ciblé pour rompre l'échange. Tous les volants exploités.", range: [5.5, 7] }
+      ]
+    },
+    aflp2: {
+      label: 'AFLP 2 : Techniques & Trajectoires', max: 5,
+      degres: [
+        { d: 1, text: "Fautes fréquentes. Ne se déplace pas. Frappes à l'amble. Service non réglementaire.", range: [0, 0.5] },
+        { d: 2, text: "Service réglementaire mais simple mise en jeu. Subit l'échange. Déplacements tardifs.", range: [1, 2] },
+        { d: 3, text: "Utilise l'espace (largeur/profondeur) OU la vitesse. Déplacements partout.", range: [2.5, 3.5] },
+        { d: 4, text: "Service utilisé comme une arme. Utilise l'espace ET la vitesse. Déplacements fluides.", range: [4, 5] }
+      ]
+    },
+    aflp5: {
+      label: "AFLP 5 : S'entraîner (Échauffement)",
+      degres: [
+        { d: 1, text: 'Préparation rapide, incomplète ou désorganisée.' },
+        { d: 2, text: 'Préparation approximative. Étapes présentes mais mal enchaînées.' },
+        { d: 3, text: 'Préparation organisée. Respect des principes (progressivité, articulations).' },
+        { d: 4, text: 'Préparation optimisée et personnalisée. Rigueur et persévérance.' }
+      ]
+    },
+    aflp4: {
+      label: 'AFLP 4 : Rôles Sociaux (Entraîneur/Observateur)',
+      degres: [
+        { d: 1, text: 'Observation inexistante, points forts et faibles non pertinents.' },
+        { d: 2, text: 'Observations limitées, points forts et faible peu pertinents.' },
+        { d: 3, text: 'Observations intéressantes, points forts et faible pertinents.' },
+        { d: 4, text: 'Observations complètes, points forts et faibles détaillés.' }
+      ]
+    }
+  };
+  const BAC_REPARTITIONS = { '4-4': [4, 4], '6-2': [6, 2], '2-6': [2, 6] };
+
+  const EVAL_RUGBY = {
+    intro: "Matchs à effectif réduit (ex : 7 contre 7) sur terrain adapté. Le plaquage est remplacé par un toucher à deux mains (entre les épaules et le bassin). Chaque équipe dispose d'un nombre limité de touchers (5) pour marquer avant le rendu du ballon. Un temps d'analyse est prévu entre les séquences pour ajuster la stratégie.",
+    aflp1: {
+      label: 'AFLP 1 : Action décisive & Marque', max: 7,
+      degres: [
+        { d: 1, text: 'Identifie difficilement les situations favorables. Jeu brouillon, défense désordonnée.', range: [0, 1] },
+        { d: 2, text: 'Identifie occasionnellement les opportunités. Jeu latéral, rideau défensif en "dents de scie".', range: [1.5, 3] },
+        { d: 3, text: 'Produit rapidement des actions décisives. Alternance jeu groupé/déployé. Rideau aligné.', range: [3.5, 5] },
+        { d: 4, text: 'Identifie et exploite instantanément. Inverse le rapport de force. Défense coulissante et pressing.', range: [5.5, 7] }
+      ]
+    },
+    aflp2: {
+      label: 'AFLP 2 : Techniques & Tactiques', max: 5,
+      degres: [
+        { d: 1, text: "Techniques peu maîtrisées. Toucher souvent raté. Perte de balle fréquente à l'impact.", range: [0, 0.5] },
+        { d: 2, text: 'Techniques stéréotypées. Soutien rare. Réussit le toucher mais de manière isolée.', range: [1, 2] },
+        { d: 3, text: 'Techniques variées (passe, soutien, évitement). Toucher maîtrisé et replacement rapide.', range: [2.5, 4] },
+        { d: 4, text: 'Variété et adaptation totale. Communication permanente. Toucher offensif (pression) et récupération.', range: [4.5, 5] }
+      ]
+    },
+    aflp5: {
+      label: "AFLP 5 : S'entraîner (Échauffement)",
+      degres: [
+        { d: 1, text: 'Préparation incomplète ou désorganisée. Étapes mal enchaînées.' },
+        { d: 2, text: 'Préparation approximative.' },
+        { d: 3, text: 'Préparation organisée. Respect des principes (progressivité).' },
+        { d: 4, text: 'Préparation optimisée. Rigueur et persévérance.' }
+      ]
+    },
+    aflp4: {
+      label: 'AFLP 4 : Rôles Sociaux (Communication)',
+      degres: [
+        { d: 1, text: 'Parole rare. Communication inadaptée.' },
+        { d: 2, text: 'Parole ponctuelle. Communication hésitante.' },
+        { d: 3, text: 'Parole régulière. Communication claire et adaptée.' },
+        { d: 4, text: 'Parole pertinente et assurée. Organise le groupe.' }
+      ]
+    }
+  };
+
+  const EVAL_BASKET_NJPF = {
+    title: 'Grille CCF — Basket 3x3 (2nde NJPF, Bac Pro)',
+    subtitle: "EG4 : L'expérience du vivre et de l'agir ensemble dans le respect de l'autre — EG4.1 : efficacité motrice (14 pts) — EG4.2 : procédures d'échauffement / rôles sociaux (6 pts)",
+    levelNames: ['Insuffisant', 'Fragile', 'Satisfaisant', 'Très satisfaisant'],
+    criteres: [
+      { key: 'off', label: 'Efficacité offensive individuelle et collective (EG4.1)', max: 7,
+        levels: [
+          { text: "Perd la balle fréquemment, ne tente pas de tir, reste isolé du jeu", range: [0, 1.5] },
+          { text: 'Conserve la balle mais prend des décisions peu pertinentes, tirs peu construits', range: [2, 3.5] },
+          { text: 'Se démarque, transmet la balle à bon escient, construit des situations de tir', range: [4, 5.5] },
+          { text: 'Crée le surnombre, exploite les espaces libres, finalise efficacement', range: [6, 7] }
+        ]
+      },
+      { key: 'def', label: 'Efficacité défensive individuelle et collective (EG4.1)', max: 7,
+        levels: [
+          { text: "Ne s'oppose pas ou fautes répétées, absent du repli défensif", range: [0, 1.5] },
+          { text: 'Défend son adversaire direct mais sans anticipation ni replacement', range: [2, 3.5] },
+          { text: 'Gêne efficacement, se replace, communique avec ses partenaires', range: [4, 5.5] },
+          { text: 'Anticipe, aide ses partenaires, provoque des pertes de balle adverses', range: [6, 7] }
+        ]
+      },
+      { key: 'echauff', label: 'Échauffement et préparation autonome (EG4.2)', max: 2,
+        levels: [
+          { text: "Ne s'échauffe pas ou de façon inadaptée", range: [0, 0] },
+          { text: "S'échauffe seul mais de manière incomplète", range: [0.5, 1] },
+          { text: "Conduit un échauffement adapté à l'activité", range: [1.5, 1.5] },
+          { text: 'Conduit un échauffement complet et adapté, y compris pour le groupe', range: [2, 2] }
+        ]
+      },
+      { key: 'role', label: 'Rôle social (arbitre / marqueur / observateur) (EG4.2)', max: 2,
+        levels: [
+          { text: "Refuse ou n'assure pas le rôle confié", range: [0, 0] },
+          { text: 'Assure le rôle avec difficulté, erreurs fréquentes', range: [0.5, 1] },
+          { text: 'Assure le rôle avec sérieux et fiabilité', range: [1.5, 1.5] },
+          { text: 'Assure le rôle avec autonomie et rigueur, fait respecter les règles', range: [2, 2] }
+        ]
+      },
+      { key: 'respect', label: 'Respect et analyse du résultat (EG4.2)', max: 2,
+        levels: [
+          { text: 'Comportement irrespectueux envers partenaires/adversaires/arbitre', range: [0, 0] },
+          { text: 'Respect de façade, ne commente pas le résultat', range: [0.5, 1] },
+          { text: 'Respecte les autres et commente simplement le résultat', range: [1.5, 1.5] },
+          { text: "Attitude exemplaire, analyse pertinente de sa performance et de celle de l'équipe", range: [2, 2] }
+        ]
+      }
+    ]
+  };
+
+  const EVAL_BASKET_4EME = {
+    title: 'Grille d\'évaluation — Basket 3x3 (4ème)',
+    subtitle: "CA4 : Conduire et maîtriser un affrontement individuel ou collectif",
+    levelNames: ['Non atteint', 'Partiellement atteint', 'Atteint', 'Dépassé'],
+    criteres: [
+      { key: 'attaque', label: "S'organiser tactiquement en attaque (occupation de l'espace, démarquage)", max: 5,
+        levels: [
+          { text: 'Reste statique, ne cherche pas à recevoir la balle', range: [0, 1] },
+          { text: 'Se déplace mais reste souvent proche du porteur de balle', range: [1.5, 2.5] },
+          { text: "Se démarque et occupe l'espace pour se rendre disponible", range: [3, 4] },
+          { text: 'Crée et exploite le surnombre pour son équipe', range: [4.5, 5] }
+        ]
+      },
+      { key: 'defense', label: "S'organiser tactiquement en défense (marquage, replacement)", max: 5,
+        levels: [
+          { text: 'Ne défend pas ou fautes répétées', range: [0, 1] },
+          { text: 'Défend mais sans se replacer ni anticiper', range: [1.5, 2.5] },
+          { text: 'Se place entre son adversaire et le panier, se replace', range: [3, 4] },
+          { text: 'Gêne efficacement et aide ses partenaires en défense', range: [4.5, 5] }
+        ]
+      },
+      { key: 'respect', label: 'Respecter partenaires, adversaires et arbitre', max: 5,
+        levels: [
+          { text: 'Comportement irrespectueux ou contestation fréquente', range: [0, 1] },
+          { text: 'Respect inconstant, quelques écarts de comportement', range: [1.5, 2.5] },
+          { text: "Respecte les partenaires, adversaires et l'arbitre", range: [3, 4] },
+          { text: 'Fair-play exemplaire, encourage ses partenaires', range: [4.5, 5] }
+        ]
+      },
+      { key: 'role', label: "Assumer un rôle social (arbitre / observateur) et gérer son effort", max: 5,
+        levels: [
+          { text: "Refuse le rôle confié ou abandon en cours d'effort", range: [0, 1] },
+          { text: 'Assure le rôle avec difficulté / effort irrégulier', range: [1.5, 2.5] },
+          { text: 'Assure le rôle correctement, effort maintenu sur la rencontre', range: [3, 4] },
+          { text: "Rôle assuré avec sérieux, effort constant et geste juste jusqu'au bout", range: [4.5, 5] }
+        ]
+      }
+    ]
+  };
+
+  const EVAL_COLLEGE_MAITRISE = [
+    {
+      key: 'placement', label: 'Placement / volant sur frappe haute (A1)',
+      niveaux: [
+        { n: 'N1', pts: 1, text: 'En retard non provoqué (efficacité faible)' },
+        { n: 'N2', pts: 2, text: 'Excentré (efficacité moyenne)' },
+        { n: 'N3', pts: 3, text: 'Sous le volant (efficacité optimale)' }
+      ]
+    },
+    {
+      key: 'replacement', label: 'Replacement / Terrain (A2)',
+      niveaux: [
+        { n: 'N0', pts: 0.5, text: 'Ne se replace pas au centre après frappe (efficacité faible)' },
+        { n: 'N1', pts: 1, text: 'Se replace parfois et/ou mal centré (efficacité réduite)' },
+        { n: 'N2', pts: 2, text: 'Se replace en retard - "contre-pied" (efficacité moyenne)' },
+        { n: 'N3', pts: 3, text: 'Se replace dès la frappe (efficacité optimale)' }
+      ]
+    },
+    {
+      key: 'cible', label: 'Cible au sol (A1)',
+      niveaux: [
+        { n: 'N1', pts: 1, text: 'Zone 1 - centrale (efficacité faible)' },
+        { n: 'N2', pts: 2, text: 'Zone 2 + alternance 1 zone (efficacité moyenne)' },
+        { n: 'N3', pts: 3, text: 'Zone 3 + alternance 2 zones (efficacité optimale)' }
+      ]
+    },
+    {
+      key: 'trajectoires', label: 'Trajectoires du volant (A1)',
+      niveaux: [
+        { n: 'N1', pts: 1, text: "Hautes favorables à l'adversaire / exposition au smash (efficacité faible)" },
+        { n: 'N2', pts: 2, text: "Hautes défavorables à l'adversaire / déséquilibre provoqué (efficacité moyenne)" },
+        { n: 'N3', pts: 3, text: "Rasant le filet, réduit le temps de réaction adverse (efficacité optimale)" }
+      ]
+    }
+  ];
+
+  const EVAL_ESCALADE_BTSA = {
+    title: "Grille d'évaluation — Escalade en moulinette (BTSA 1)",
+    subtitle: "Groupes de 3 (grimpeur / assureur / contre-assureur-observateur). 2 voies : une voie projet annoncée (2 essais) et une voie à vue (1 essai), 6 min max par voie. Performance = voie la plus difficile réussie, barème identique filles/garçons ; +0,5 si voie à vue réussie (plafond 8). Voie non réussie mais 2/3 atteints = cotation inférieure. Faute grave de sécurité = arrêt et 0 en sécurité.",
+    levelNames: ['Insuffisant', 'Fragile', 'Satisfaisant', 'Très satisfaisant'],
+    criteres: [
+      { key: 'perf', label: 'Performance — voie la plus difficile réussie', max: 8,
+        levels: [
+          { text: 'Aucune voie réussie (0) · 4a (1) · 4b (2)', range: [0, 2] },
+          { text: '4c (3) · 5a (4)', range: [2.5, 4] },
+          { text: '5b (5) · 5c (6)', range: [4.5, 6] },
+          { text: '6a (7) · 6b et plus (8)', range: [6.5, 8] }
+        ]
+      },
+      { key: 'motricite', label: 'Efficacité motrice (voie projet)', max: 6,
+        levels: [
+          { text: 'Grimpe en tirant sur les bras fléchis. Pieds placés au hasard ou qui glissent. Arrêts longs et crispés.', range: [0, 1.5] },
+          { text: 'Les jambes poussent sur les prises évidentes. Quelques repos bras tendus. Rythme irrégulier, hésitations aux passages clés.', range: [2, 3] },
+          { text: 'Pieds précis (pointe, carre). Bassin proche du mur. Lecture anticipée de la voie. Repos choisis.', range: [3.5, 4.5] },
+          { text: "Grimpe fluide. Placements de profil, changements de pied, crochetages. Gestion de l'effort, enchaînement sans rupture.", range: [5, 6] }
+        ]
+      },
+      { key: 'securite', label: 'Sécurité et assurage', max: 4,
+        levels: [
+          { text: 'Faute grave (main frein lâchée, nœud non terminé non détecté) = 0. Ou assurage nécessitant des interventions répétées.', range: [0, 1] },
+          { text: 'Nœud correct mais vérifications à rappeler. Corde parfois molle, descente saccadée.', range: [1.5, 2] },
+          { text: 'Vérifications croisées systématiques. Main frein constante, corde tendue sans être tirée, descente contrôlée.', range: [2.5, 3] },
+          { text: 'Assurage irréprochable et bien placé, descente régulière, communication claire (« sec », « je descends »…).', range: [3.5, 4] }
+        ]
+      },
+      { key: 'projet', label: 'Projet et analyse', max: 2,
+        levels: [
+          { text: "Écart de plus d'une cotation avec la voie annoncée, pas d'analyse.", range: [0, 0] },
+          { text: "Écart d'une cotation OU analyse très sommaire.", range: [0.5, 1] },
+          { text: 'Voie réussie au niveau annoncé, analyse simple du passage clé.', range: [1.5, 1.5] },
+          { text: "Voie réussie au niveau annoncé, analyse pertinente (réussites, passage clé, ce qu'il changerait).", range: [2, 2] }
+        ]
+      }
+    ]
+  };
+
+  // Registre reliant chaque pratique / niveau à sa grille et son type de rendu.
+  const EVAL_DEFS = {
+    badminton: {
+      label: 'Badminton',
+      niveaux: {
+        bac: { kind: 'aflp', label: 'Bac', config: EVAL_BAC },
+        college: { kind: 'badminton_college', label: '4ème / 3ème' }
+      }
+    },
+    rugby: {
+      label: 'Rugby',
+      niveaux: {
+        bac: { kind: 'aflp', label: 'Bac', config: EVAL_RUGBY }
+      }
+    },
+    basket3x3: {
+      label: 'Basket 3x3',
+      niveaux: {
+        bac: { kind: 'flat', label: '2nde NJPF (Bac Pro)', config: EVAL_BASKET_NJPF },
+        college: { kind: 'flat', label: '4ème', config: EVAL_BASKET_4EME }
+      }
+    },
+    escalade: {
+      label: 'Escalade',
+      niveaux: {
+        btsa: { kind: 'flat', label: 'BTSA 1 (moulinette)', config: EVAL_ESCALADE_BTSA }
+      }
+    }
+  };
+
+  // Classes importées du fichier de Dodo — servent uniquement à peupler l'outil
+  // la toute première fois (si aucune donnée n'existe déjà).
+  const SEED_CLASSES = {};
+
+  // Photos importées depuis les listes avec photos de Dodo — appliquées aux
+  // élèves du SEED_CLASSES correspondant (nom de classe + nom complet exacts).
+  const SEED_PHOTOS = {};
+
+  const syncStatusEl = document.getElementById('syncStatus');
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const panels = {
+    accueil: document.getElementById('panel-accueil'),
+    equipe: document.getElementById('panel-equipe'),
+    evaluation: document.getElementById('panel-evaluation'),
+    escalade: document.getElementById('panel-escalade'),
+    trail: document.getElementById('panel-trail')
+  };
+
+  // Accueil elements
+  const classSelectHome = document.getElementById('classSelectHome');
+  const sessionDateInput = document.getElementById('sessionDate');
+  const addClassBtnHome = document.getElementById('addClassBtnHome');
+  const deleteClassBtnHome = document.getElementById('deleteClassBtnHome');
+  const resetSessionBtn = document.getElementById('resetSessionBtn');
+  const summaryRow = document.getElementById('summaryRow');
+  const addForm = document.getElementById('addForm');
+  const studentName = document.getElementById('studentName');
+  const rosterHome = document.getElementById('rosterHome');
+  const rosterEmptyHome = document.getElementById('rosterEmptyHome');
+  const rosterCountHome = document.getElementById('rosterCountHome');
+  const toggleRecapBtn = document.getElementById('toggleRecapBtn');
+  const recapWrap = document.getElementById('recapWrap');
+  const recapClassLabel = document.getElementById('recapClassLabel');
+  const recapContent = document.getElementById('recapContent');
+  const recapDetail = document.getElementById('recapDetail');
+
+  // Équipe elements
+  const classSelectTeam = document.getElementById('classSelectTeam');
+  const teamDateLabel = document.getElementById('teamDateLabel');
+  const sportGrid = document.getElementById('sportGrid');
+  const levelsCard = document.getElementById('levelsCard');
+  const levelsCardTitle = document.getElementById('levelsCardTitle');
+  const levelsCardNote = document.getElementById('levelsCardNote');
+  const levelsSportLabel = document.getElementById('levelsSportLabel');
+  const rosterTeam = document.getElementById('rosterTeam');
+  const rosterEmptyTeam = document.getElementById('rosterEmptyTeam');
+  const composeCard = document.getElementById('composeCard');
+  const teamSizeInput = document.getElementById('teamSize');
+  const teamSizeHint = document.getElementById('teamSizeHint');
+  const modeHetero = document.getElementById('modeHetero');
+  const modeHomo = document.getElementById('modeHomo');
+  const modeHint = document.getElementById('modeHint');
+  const generateBtn = document.getElementById('generateBtn');
+  const statusMsg = document.getElementById('statusMsg');
+  const teamsOutput = document.getElementById('teamsOutput');
+
+  // Évaluation elements
+  const evalSportGrid = document.getElementById('evalSportGrid');
+  const niveauBacBtn = document.getElementById('niveauBac');
+  const niveauCollegeBtn = document.getElementById('niveauCollege');
+  const classSelectEval = document.getElementById('classSelectEval');
+  const evalExportNote = document.getElementById('evalExportNote');
+  const exportAllBtn = document.getElementById('exportAllBtn');
+  const evalRoster = document.getElementById('evalRoster');
+  const evalRosterEmpty = document.getElementById('evalRosterEmpty');
+
+  // Escalade elements
+  const classSelectClimb = document.getElementById('classSelectClimb');
+  const climbDateInput = document.getElementById('climbDate');
+  const climbSummaryRow = document.getElementById('climbSummaryRow');
+  const climbRoster = document.getElementById('climbRoster');
+  const climbRosterEmpty = document.getElementById('climbRosterEmpty');
+  const toggleClimbRecapBtn = document.getElementById('toggleClimbRecapBtn');
+  const climbRecapWrap = document.getElementById('climbRecapWrap');
+  const climbRecapClassLabel = document.getElementById('climbRecapClassLabel');
+  const climbRecapContent = document.getElementById('climbRecapContent');
+  const climbRecapDetail = document.getElementById('climbRecapDetail');
+
+  // Trail elements
+  const classSelectTrail = document.getElementById('classSelectTrail');
+  const trailDateInput = document.getElementById('trailDate');
+  const trailSummaryRow = document.getElementById('trailSummaryRow');
+  const trailRanking = document.getElementById('trailRanking');
+  const trailRoster = document.getElementById('trailRoster');
+  const trailRosterEmpty = document.getElementById('trailRosterEmpty');
+  const toggleTrailRecapBtn = document.getElementById('toggleTrailRecapBtn');
+  const trailRecapWrap = document.getElementById('trailRecapWrap');
+  const trailRecapClassLabel = document.getElementById('trailRecapClassLabel');
+  const trailRecapContent = document.getElementById('trailRecapContent');
+  const trailRecapDetail = document.getElementById('trailRecapDetail');
+
+  let activeTab = 'accueil';
+  let currentMode = 'hetero';
+  let currentSport = null;
+  let db = { classes: {}, attendance: {}, version: 0, updatedAt: 0 };
+  let homeClass = null;
+  let teamClass = null;
+  let evalClass = null;
+  let evalSport = 'badminton';
+  let evalNiveau = 'bac';
+  let evalExpandedStudent = null;
+  let climbClass = null;
+  let climbExpandedStudent = null;
+  let climbRecapVisible = false;
+  let climbRecapSelectedStudent = null;
+  let trailClass = null;
+  let trailExpandedStudent = null;
+  let trailRecapVisible = false;
+  let trailRecapSelectedStudent = null;
+  let recapVisible = false;
+  let recapSelectedStudent = null;
+  let localDirty = false; // true as soon as the user edits something locally
+  let selectedDate = todayStr();
+
+  function todayStr() {
+    const d = new Date();
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function formatDateFR(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  function uid() { return 's' + Math.random().toString(36).slice(2, 10); }
+
+  function freshLevels() {
+    const l = {};
+    SPORTS.forEach(s => l[s] = RANK_SPORTS[s] ? null : 3);
+    return l;
+  }
+
+  function seedPhotoFor(className, name) {
+    const forClass = SEED_PHOTOS[className];
+    return (forClass && forClass[name]) || null;
+  }
+
+  function buildSeedClasses() {
+    const classes = {};
+    Object.keys(SEED_CLASSES).forEach(className => {
+      classes[className] = SEED_CLASSES[className].map(name => ({
+        id: uid(), name: name, photo: seedPhotoFor(className, name), levels: freshLevels(), rankHistory: {}, eval: { badminton: { bac: {}, college: {} } }
+      }));
+    });
+    return classes;
+  }
+
+  // Sauvegardes locales glissantes (les 8 dernières versions différentes).
+  const BK_PREFIX = STORAGE_PREFIX + '-bk-';
+  function listBackups() {
+    const out = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.indexOf(BK_PREFIX) === 0 || k === STORAGE_PREFIX + '-backup')) out.push(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+  function rollBackup(raw) {
+    try {
+      const keys = listBackups().filter(k => k !== STORAGE_PREFIX + '-backup').sort();
+      if (keys.length && localStorage.getItem(keys[keys.length - 1]) === raw) return;
+      localStorage.setItem(BK_PREFIX + Date.now(), raw);
+      keys.push('x');
+      const all = listBackups().filter(k => k !== STORAGE_PREFIX + '-backup').sort();
+      while (all.length > 8) localStorage.removeItem(all.shift());
+    } catch (e) {}
+  }
+  function describeBackup(raw) {
+    try {
+      const d = JSON.parse(raw);
+      let ev = 0, rk = 0, st = 0;
+      Object.keys(d.classes || {}).forEach(c => (d.classes[c] || []).forEach(s => {
+        st++;
+        if ((s.levels || {}).badminton != null) rk++;
+        Object.keys(s.eval || {}).forEach(sp => Object.keys(s.eval[sp] || {}).forEach(lv => { if (Object.keys(s.eval[sp][lv] || {}).length) ev++; }));
+      }));
+      const att = Object.keys(d.attendance || {}).reduce((n, c) => n + Object.keys(d.attendance[c] || {}).length, 0);
+      return { when: d.updatedAt ? new Date(d.updatedAt).toLocaleString('fr-FR') : 'date inconnue', txt: st + ' élèves · ' + att + ' appels · ' + ev + ' évaluations · ' + rk + ' classements bad' };
+    } catch (e) { return { when: '?', txt: 'illisible' }; }
+  }
+
+  function loadDB() {
+    try {
+      const raw = localStorage.getItem(STORAGE_PREFIX);
+      if (raw) { rollBackup(raw); db = JSON.parse(raw); }
+    } catch (e) { db = { classes: {}, attendance: {}, version: 0 }; }
+    if (!db.classes) db.classes = {};
+    if (!db.attendance) db.attendance = {};
+    if (!db.climbing) db.climbing = {};
+    if (!db.trail) db.trail = {};
+    if (!db.version) db.version = 0;
+    if (!db.updatedAt) db.updatedAt = 0;
+  }
+
+  // Migrates/seeds the store up to SCHEMA_VERSION. Returns true if changed.
+  function ensureSchema() {
+    let changed = false;
+    if (db.version < 2) {
+      db.classes = buildSeedClasses();
+      db.attendance = {};
+      db.version = 2;
+      changed = true;
+    }
+    if (db.version < 3) {
+      // v2 stored absent/dispense/oubliTenue directly on the student; move
+      // any already-flagged student into a dated attendance record so
+      // nothing already entered is lost, then drop the old fields.
+      const today = todayStr();
+      Object.keys(db.classes).forEach(className => {
+        db.classes[className].forEach(st => {
+          if (st.absent || st.dispense || st.oubliTenue) {
+            db.attendance[className] = db.attendance[className] || {};
+            db.attendance[className][today] = db.attendance[className][today] || {};
+            db.attendance[className][today][st.id] = {
+              absent: !!st.absent, dispense: !!st.dispense, oubliTenue: !!st.oubliTenue
+            };
+          }
+          delete st.absent; delete st.dispense; delete st.oubliTenue;
+          if (!st.levels) st.levels = freshLevels();
+        });
+      });
+      db.version = 3;
+      changed = true;
+    }
+    if (db.version < 4) {
+      // Introduces a dated history of rankings (per sport that uses a
+      // classement) so past values are kept and can be averaged later.
+      Object.keys(db.classes).forEach(className => {
+        db.classes[className].forEach(st => {
+          if (!st.rankHistory) st.rankHistory = {};
+          Object.keys(RANK_SPORTS).forEach(sport => {
+            if (!st.rankHistory[sport]) st.rankHistory[sport] = {};
+            const current = st.levels && st.levels[sport];
+            if (current != null && Object.keys(st.rankHistory[sport]).length === 0) {
+              st.rankHistory[sport][todayStr()] = current;
+            }
+          });
+        });
+      });
+      db.version = 4;
+      changed = true;
+    }
+    if (db.version < 5) {
+      // Adds per-student evaluation records (badminton: bac / collège).
+      Object.keys(db.classes).forEach(className => {
+        db.classes[className].forEach(st => {
+          if (!st.eval) st.eval = {};
+          if (!st.eval.badminton) st.eval.badminton = { bac: {}, college: {} };
+        });
+      });
+      db.version = 5;
+      changed = true;
+    }
+    if (db.version < 6) {
+      // Applique les photos importées (SEED_PHOTOS) aux élèves existants qui
+      // correspondent exactement (classe + nom complet) et n'ont pas encore
+      // de photo — sans jamais écraser une photo déjà ajoutée manuellement.
+      Object.keys(db.classes).forEach(className => {
+        db.classes[className].forEach(st => {
+          if (!st.photo) {
+            const p = seedPhotoFor(className, st.name);
+            if (p) st.photo = p;
+          }
+        });
+      });
+      db.version = 6;
+      changed = true;
+    }
+    return changed;
+  }
+
+  function saveDB(isSystemSave) {
+    if (!isSystemSave) { localDirty = true; db.updatedAt = Date.now(); }
+    try { localStorage.setItem(STORAGE_PREFIX, JSON.stringify(db)); } catch (e) {}
+    scheduleRemoteWrite();
+  }
+
+  function ensureClasses() {
+    if (Object.keys(db.classes).length === 0) db.classes['Ma classe'] = [];
+  }
+
+  // Ajoute la classe BTSA1 une seule fois (n'écrase jamais si elle existe déjà).
+  function ensureBtsa1Class() { return false; }
+
+  // Ajoute la classe BTSA2 une seule fois (n'écrase jamais si elle existe déjà).
+  function ensureBtsa2Class() { return false; }
+
+  function classNames() { return Object.keys(db.classes); }
+  function students(className) { return db.classes[className] || []; }
+
+  // ---- Escalade : données par séance (voie, difficulté, hauteur réussie) ----
+  function climbEntries(className, date, studentId) {
+    const rec = db.climbing && db.climbing[className] && db.climbing[className][date] && db.climbing[className][date][studentId];
+    return rec || [];
+  }
+  function addClimbEntry(className, date, studentId, entry) {
+    db.climbing[className] = db.climbing[className] || {};
+    db.climbing[className][date] = db.climbing[className][date] || {};
+    db.climbing[className][date][studentId] = db.climbing[className][date][studentId] || [];
+    db.climbing[className][date][studentId].push(entry);
+    saveDB();
+  }
+  function deleteClimbEntry(className, date, studentId, idx) {
+    if (!db.climbing[className] || !db.climbing[className][date] || !db.climbing[className][date][studentId]) return;
+    db.climbing[className][date][studentId].splice(idx, 1);
+    saveDB();
+  }
+  function sessionClimbTotals(className, date, studentId) {
+    const entries = climbEntries(className, date, studentId);
+    return { routes: entries.length, meters: entries.reduce((s, e) => s + (e.hauteur || 0), 0) };
+  }
+  function studentClimbTotals(className, studentId) {
+    const byDate = (db.climbing && db.climbing[className]) || {};
+    let routes = 0, meters = 0;
+    Object.keys(byDate).forEach(date => {
+      const entries = byDate[date][studentId];
+      if (!entries) return;
+      routes += entries.length;
+      meters += entries.reduce((s, e) => s + (e.hauteur || 0), 0);
+    });
+    return { routes: routes, meters: meters };
+  }
+
+  // ---------- Trail ----------
+  function setStudentSexe(className, studentId, sexe) {
+    const st = students(className).find(s => s.id === studentId);
+    if (!st) return;
+    st.sexe = (st.sexe === sexe) ? null : sexe; // re-cliquer désélectionne
+    saveDB();
+  }
+  function trailEntries(className, date, studentId) {
+    const rec = db.trail && db.trail[className] && db.trail[className][date] && db.trail[className][date][studentId];
+    return rec || [];
+  }
+  function addTrailEntry(className, date, studentId, entry) {
+    db.trail[className] = db.trail[className] || {};
+    db.trail[className][date] = db.trail[className][date] || {};
+    db.trail[className][date][studentId] = db.trail[className][date][studentId] || [];
+    db.trail[className][date][studentId].push(entry);
+    saveDB();
+  }
+  function deleteTrailEntry(className, date, studentId, idx) {
+    if (!db.trail[className] || !db.trail[className][date] || !db.trail[className][date][studentId]) return;
+    db.trail[className][date][studentId].splice(idx, 1);
+    saveDB();
+  }
+  // Allure = minutes par km (nombre décimal). Renvoie null si la distance est invalide.
+  function tracePace(entry) {
+    if (!entry || !entry.distance || entry.distance <= 0) return null;
+    return (entry.tempsSec / 60) / entry.distance;
+  }
+  function formatPace(pace) {
+    if (pace == null || !isFinite(pace)) return '—';
+    const totalSec = Math.round(pace * 60);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return m + ':' + String(s).padStart(2, '0') + ' /km';
+  }
+  function formatTemps(sec) {
+    if (sec == null) return '—';
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return m + ':' + String(s).padStart(2, '0');
+  }
+  // ---- Note de performance /20 ----
+  // Méthode adaptée de la grille nationale "Randonnée sportive" de
+  // l'enseignement agricole (réseau APSAES, région AURA) : un temps de
+  // référence est calculé pour l'effort demandé, puis la note décroît par
+  // paliers suivant l'écart (%) entre le temps réalisé et ce temps de
+  // référence (grille source /10, reportée ici sur /20).
+  // Le dénivelé est converti en distance équivalente avec la convention
+  // usuelle en trail (+100 m D+ ≈ +1 km à plat).
+  // Comme les grilles CCF officielles, le temps de référence diffère selon
+  // le sexe de l'élève (écart usuel ~15% sur une épreuve d'endurance).
+  const TRAIL_REF_PACE_MIN_KM_G = 6.0;    // allure de référence garçons (min/km, à plat)
+  const TRAIL_REF_PACE_MIN_KM_F = 6.9;    // allure de référence filles (min/km, à plat)
+  const TRAIL_DPLUS_KM_PER_100M = 1.0;    // équivalence dénivelé -> distance
+
+  function trailRefPace(sexe) {
+    return sexe === 'F' ? TRAIL_REF_PACE_MIN_KM_F : TRAIL_REF_PACE_MIN_KM_G;
+  }
+  function trailEquivDistance(entry) {
+    if (!entry) return 0;
+    return (entry.distance || 0) + ((entry.denivele || 0) / 100) * TRAIL_DPLUS_KM_PER_100M;
+  }
+  function trailRefTimeMin(entry, sexe) {
+    return trailEquivDistance(entry) * trailRefPace(sexe);
+  }
+  // Paliers (écart % au temps de référence -> points /20). Le temps de
+  // référence vaut ici une performance "attendue" (moyenne), notée autour
+  // de 13-14/20 — conforme à la logique habituelle des grilles CCF où le
+  // barème plafond récompense une performance nettement au-dessus de
+  // l'attendu plutôt que l'attendu lui-même.
+  const TRAIL_SCORE_ANCHORS = [
+    [-20, 20], [-10, 18], [0, 14], [5, 11], [10, 8], [15, 5], [25, 2], [40, 0]
+  ];
+  function trailPerformanceNote(entry, sexe) {
+    if (!entry || !entry.distance || entry.distance <= 0 || !entry.tempsSec) return null;
+    const refMin = trailRefTimeMin(entry, sexe);
+    if (!refMin || refMin <= 0) return null;
+    const actualMin = entry.tempsSec / 60;
+    const ecartPct = ((actualMin - refMin) / refMin) * 100;
+    if (ecartPct <= TRAIL_SCORE_ANCHORS[0][0]) return TRAIL_SCORE_ANCHORS[0][1];
+    for (let i = 0; i < TRAIL_SCORE_ANCHORS.length - 1; i++) {
+      const [p0, s0] = TRAIL_SCORE_ANCHORS[i];
+      const [p1, s1] = TRAIL_SCORE_ANCHORS[i + 1];
+      if (ecartPct <= p1) {
+        const t = (ecartPct - p0) / (p1 - p0);
+        return Math.round((s0 + (s1 - s0) * t) * 10) / 10;
+      }
+    }
+    return 0;
+  }
+  function formatNote20(n) {
+    if (n == null) return '—';
+    return (n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ',')) + '/20';
+  }
+
+  // Meilleure (plus rapide) entrée d'un élève pour une date donnée.
+  function bestTrailEntry(className, date, studentId) {
+    const entries = trailEntries(className, date, studentId);
+    let best = null, bestPace = Infinity;
+    entries.forEach(e => {
+      const p = tracePace(e);
+      if (p != null && p < bestPace) { bestPace = p; best = e; }
+    });
+    return best;
+  }
+  // Meilleure entrée toutes séances confondues.
+  function studentBestTrailEntry(className, studentId) {
+    const byDate = (db.trail && db.trail[className]) || {};
+    let best = null, bestPace = Infinity, bestDate = null;
+    Object.keys(byDate).forEach(date => {
+      const entries = byDate[date][studentId];
+      if (!entries) return;
+      entries.forEach(e => {
+        const p = tracePace(e);
+        if (p != null && p < bestPace) { bestPace = p; best = e; bestDate = date; }
+      });
+    });
+    return best ? { entry: best, date: bestDate } : null;
+  }
+  // Classement de la séance : un élève par ligne (sa meilleure sortie du jour), triés par allure croissante.
+  function trailRankingForDate(className, date) {
+    const list = students(className);
+    const rows = [];
+    list.forEach(st => {
+      const best = bestTrailEntry(className, date, st.id);
+      if (best) rows.push({ student: st, entry: best, pace: tracePace(best) });
+    });
+    rows.sort((a, b) => a.pace - b.pace);
+    return rows;
+  }
+
+  function getAtt(className, date, studentId) {
+    const rec = db.attendance && db.attendance[className] && db.attendance[className][date] && db.attendance[className][date][studentId];
+    return rec || { absent: false, dispense: false, oubliTenue: false };
+  }
+
+  // Cumulative totals for one student, across every date recorded for THIS
+  // class only — classes never share or mix attendance data.
+  function studentTotals(className, studentId) {
+    const attByClass = (db.attendance && db.attendance[className]) || {};
+    let a = 0, d = 0, o = 0;
+    Object.keys(attByClass).forEach(date => {
+      const rec = attByClass[date][studentId];
+      if (!rec) return;
+      if (rec.absent) a++;
+      if (rec.dispense) d++;
+      if (rec.oubliTenue) o++;
+    });
+    return { a: a, d: d, o: o };
+  }
+
+  function setAtt(className, date, studentId, field, value) {
+    db.attendance[className] = db.attendance[className] || {};
+    db.attendance[className][date] = db.attendance[className][date] || {};
+    const existing = db.attendance[className][date][studentId] || { absent: false, dispense: false, oubliTenue: false };
+    existing[field] = value;
+    db.attendance[className][date][studentId] = existing;
+    saveDB();
+  }
+
+  // ---------- Tabs ----------
+  tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  function switchTab(tab) {
+    activeTab = tab;
+    tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    Object.keys(panels).forEach(key => { panels[key].hidden = (key !== tab); });
+    if (tab === 'accueil') renderHome();
+    if (tab === 'equipe') renderTeamClassOptions();
+    if (tab === 'evaluation') renderEvalClassOptions();
+    if (tab === 'escalade') renderClimbClassOptions();
+    if (tab === 'trail') renderTrailClassOptions();
+  }
+
+  function classRank(name) {
+    const n = name.toLowerCase().trim();
+    if (/^6\s*[eè]me/.test(n)) return 9;
+    if (/^5\s*[eè]me/.test(n)) return 10;
+    if (/^4\s*[eè]me/.test(n)) return 11;
+    if (/^3\s*[eè]me/.test(n)) return 12;
+    if (/^2\s*nde?/.test(n)) return 20;
+    if (/^1\s*[eè]re/.test(n)) return 21;
+    if (/^term/.test(n)) return 22;
+    if (/^bts/.test(n)) return 30;
+    return 99;
+  }
+  function sortedClassNames() {
+    return classNames().slice().sort((a, b) => {
+      const ra = classRank(a), rb = classRank(b);
+      if (ra !== rb) return ra - rb;
+      const na = parseInt((a.match(/\d+/) || [])[0], 10);
+      const nb = parseInt((b.match(/\d+/) || [])[0], 10);
+      if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+      return a.localeCompare(b, 'fr');
+    });
+  }
+
+  function fillClassSelect(selectEl, selected, names) {
+    selectEl.innerHTML = '';
+    (names || sortedClassNames()).forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      if (name === selected) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  // ---------- Accueil ----------
+  sessionDateInput.addEventListener('change', () => {
+    selectedDate = sessionDateInput.value || todayStr();
+    renderHome();
+    updateTeamDateLabel();
+  });
+
+  function renderHome() {
+    ensureClasses();
+    if (!homeClass || !db.classes[homeClass]) homeClass = sortedClassNames()[0];
+    fillClassSelect(classSelectHome, homeClass);
+    sessionDateInput.value = selectedDate;
+
+    const list = students(homeClass);
+    rosterHome.innerHTML = '';
+    if (list.length === 0) {
+      rosterEmptyHome.style.display = 'block';
+    } else {
+      rosterEmptyHome.style.display = 'none';
+      list.forEach(st => {
+        const att = getAtt(homeClass, selectedDate, st.id);
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        const nameWrap = document.createElement('div');
+        nameWrap.style.display = 'flex';
+        nameWrap.style.flexDirection = 'column';
+        nameWrap.style.flex = '1 1 140px';
+        nameWrap.style.gap = '2px';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'name';
+        nameEl.style.flex = 'none';
+        nameEl.textContent = st.name;
+        nameWrap.appendChild(nameEl);
+
+        const totals = studentTotals(homeClass, st.id);
+        if (totals.a > 0 || totals.d > 0 || totals.o > 0) {
+          const totalsEl = document.createElement('div');
+          totalsEl.style.fontSize = '0.74rem';
+          totalsEl.style.color = 'var(--ink-soft)';
+          const parts = [];
+          if (totals.a > 0) parts.push('🚫 ' + totals.a);
+          if (totals.d > 0) parts.push('💊 ' + totals.d);
+          if (totals.o > 0) parts.push('👕 ' + totals.o);
+          totalsEl.textContent = parts.join('  ·  ');
+          nameWrap.appendChild(totalsEl);
+        }
+
+        row.appendChild(nameWrap);
+
+        const chips = document.createElement('div');
+        chips.className = 'chip-group';
+        chips.appendChild(makeChip('🚫 Absent', att.absent, () => {
+          setAtt(homeClass, selectedDate, st.id, 'absent', !att.absent); renderHome();
+        }, 'absent'));
+        chips.appendChild(makeChip('💊 Dispensé', att.dispense, () => {
+          setAtt(homeClass, selectedDate, st.id, 'dispense', !att.dispense); renderHome();
+        }, 'dispense'));
+        chips.appendChild(makeChip('👕 Oubli tenue', att.oubliTenue, () => {
+          setAtt(homeClass, selectedDate, st.id, 'oubliTenue', !att.oubliTenue); renderHome();
+        }, 'oubli'));
+        row.appendChild(chips);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'del-btn';
+        delBtn.type = 'button';
+        delBtn.setAttribute('aria-label', 'Supprimer ' + st.name);
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', () => {
+          db.classes[homeClass] = students(homeClass).filter(s => s.id !== st.id);
+          saveDB();
+          renderHome();
+        });
+        row.appendChild(delBtn);
+
+        rosterHome.appendChild(row);
+      });
+    }
+
+    const total = list.length;
+    let absentCount = 0, dispenseCount = 0, oubliCount = 0;
+    list.forEach(st => {
+      const att = getAtt(homeClass, selectedDate, st.id);
+      if (att.absent) absentCount++;
+      if (att.dispense) dispenseCount++;
+      if (att.oubliTenue) oubliCount++;
+    });
+    rosterCountHome.textContent = total === 0 ? '' : total + ' élève' + (total > 1 ? 's' : '');
+
+    summaryRow.innerHTML = '';
+    summaryRow.appendChild(makeSummaryChip(absentCount + ' absent' + (absentCount !== 1 ? 's' : ''), absentCount > 0 ? 'warn' : ''));
+    summaryRow.appendChild(makeSummaryChip(dispenseCount + ' dispensé' + (dispenseCount !== 1 ? 's' : ''), dispenseCount > 0 ? 'amberc' : ''));
+    summaryRow.appendChild(makeSummaryChip(oubliCount + ' oubli' + (oubliCount !== 1 ? 's' : '') + ' de tenue', ''));
+
+    deleteClassBtnHome.style.display = classNames().length > 1 ? 'inline-block' : 'none';
+
+    if (recapVisible) renderRecap();
+    updateTeamDateLabel();
+  }
+
+  function makeChip(label, isOn, onClick, kind) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip-toggle ' + kind + (isOn ? ' on' : '');
+    btn.textContent = label;
+    btn.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  function makeSummaryChip(text, cls) {
+    const span = document.createElement('span');
+    span.className = 'summary-chip' + (cls ? ' ' + cls : '');
+    span.textContent = text;
+    return span;
+  }
+
+  classSelectHome.addEventListener('change', () => { homeClass = classSelectHome.value; recapSelectedStudent = null; renderHome(); });
+
+  addClassBtnHome.addEventListener('click', () => {
+    const name = prompt('Nom de la nouvelle classe :');
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (!db.classes[trimmed]) db.classes[trimmed] = [];
+    homeClass = trimmed;
+    saveDB();
+    renderHome();
+  });
+
+  deleteClassBtnHome.addEventListener('click', () => {
+    if (!confirm('Supprimer la classe « ' + homeClass + ' » et tous ses élèves ?')) return;
+    delete db.classes[homeClass];
+    delete db.attendance[homeClass];
+    homeClass = null;
+    saveDB();
+    renderHome();
+  });
+
+  resetSessionBtn.addEventListener('click', () => {
+    if (db.attendance[homeClass]) delete db.attendance[homeClass][selectedDate];
+    saveDB();
+    renderHome();
+  });
+
+  addForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = studentName.value.trim();
+    if (!name) return;
+    students(homeClass).push({ id: uid(), name: name, photo: null, levels: freshLevels(), rankHistory: {}, eval: { badminton: { bac: {}, college: {} } } });
+    saveDB();
+    studentName.value = '';
+    studentName.focus();
+    renderHome();
+  });
+
+  // ---------- Récap ----------
+  toggleRecapBtn.addEventListener('click', () => {
+    recapVisible = !recapVisible;
+    recapWrap.style.display = recapVisible ? 'block' : 'none';
+    toggleRecapBtn.textContent = recapVisible ? '📊 Masquer le récap' : '📊 Voir le récap';
+    if (recapVisible) renderRecap();
+  });
+
+  function renderRecap() {
+    recapClassLabel.textContent = homeClass;
+    const list = students(homeClass);
+    const attByClass = db.attendance[homeClass] || {};
+    const dates = Object.keys(attByClass).sort();
+
+    if (dates.length === 0 || list.length === 0) {
+      recapContent.innerHTML = '<div class="roster-empty">Aucune donnée d\'assiduité enregistrée pour cette classe pour le moment.</div>';
+      recapDetail.innerHTML = '';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'recap-table';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>Élève</th><th class="num" style="text-align:center;">Absences</th><th class="num" style="text-align:center;">Dispenses</th><th class="num" style="text-align:center;">Oublis tenue</th></tr>';
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    list.forEach(st => {
+      let a = 0, d = 0, o = 0;
+      dates.forEach(date => {
+        const rec = attByClass[date][st.id];
+        if (!rec) return;
+        if (rec.absent) a++;
+        if (rec.dispense) d++;
+        if (rec.oubliTenue) o++;
+      });
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      if (st.id === recapSelectedStudent) tr.style.background = 'var(--gold-soft)';
+      tr.innerHTML = '<td>' + escapeHtml(st.name) + '</td>' +
+        '<td class="num">' + a + '</td>' +
+        '<td class="num">' + d + '</td>' +
+        '<td class="num">' + o + '</td>';
+      tr.addEventListener('click', () => {
+        recapSelectedStudent = (recapSelectedStudent === st.id) ? null : st.id;
+        renderRecap();
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    recapContent.innerHTML = '';
+    recapContent.appendChild(table);
+
+    const note = document.createElement('div');
+    note.className = 'recap-note';
+    note.textContent = dates.length + ' date' + (dates.length > 1 ? 's' : '') + ' enregistrée' + (dates.length > 1 ? 's' : '') +
+      ' : ' + dates.map(formatDateFR).join(', ');
+    recapContent.appendChild(note);
+
+    renderRecapDetail(list, attByClass, dates);
+  }
+
+  function renderRecapDetail(list, attByClass, dates) {
+    recapDetail.innerHTML = '';
+    if (!recapSelectedStudent) return;
+    const st = list.find(s => s.id === recapSelectedStudent);
+    if (!st) { recapSelectedStudent = null; return; }
+
+    const entries = dates
+      .filter(date => attByClass[date][st.id])
+      .map(date => ({ date: date, rec: attByClass[date][st.id] }))
+      .filter(e => e.rec.absent || e.rec.dispense || e.rec.oubliTenue);
+
+    const box = document.createElement('div');
+    box.style.marginTop = '16px';
+    box.style.borderTop = '1px solid var(--line)';
+    box.style.paddingTop = '14px';
+
+    const headRow = document.createElement('div');
+    headRow.style.display = 'flex';
+    headRow.style.justifyContent = 'space-between';
+    headRow.style.alignItems = 'center';
+    headRow.style.marginBottom = '10px';
+    const h3 = document.createElement('div');
+    h3.style.fontFamily = "'Oswald', sans-serif";
+    h3.style.fontWeight = '600';
+    h3.style.fontSize = '0.95rem';
+    h3.textContent = 'Détail — ' + st.name;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn ghost';
+    closeBtn.type = 'button';
+    closeBtn.textContent = 'Fermer';
+    closeBtn.addEventListener('click', () => { recapSelectedStudent = null; renderRecap(); });
+    headRow.appendChild(h3);
+    headRow.appendChild(closeBtn);
+    box.appendChild(headRow);
+
+    if (entries.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'roster-empty';
+      empty.textContent = 'Aucune absence, dispense ou oubli de tenue enregistré pour cet élève.';
+      box.appendChild(empty);
+    } else {
+      const list2 = document.createElement('div');
+      list2.className = 'roster';
+      entries.forEach(e => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const d = document.createElement('div');
+        d.className = 'name';
+        d.style.fontWeight = '600';
+        d.textContent = formatDateFR(e.date);
+        row.appendChild(d);
+        const chips = document.createElement('div');
+        chips.className = 'chip-group';
+        if (e.rec.absent) chips.appendChild(makeStaticChip('🚫 Absent', 'absent'));
+        if (e.rec.dispense) chips.appendChild(makeStaticChip('💊 Dispensé', 'dispense'));
+        if (e.rec.oubliTenue) chips.appendChild(makeStaticChip('👕 Oubli tenue', 'oubli'));
+        row.appendChild(chips);
+        list2.appendChild(row);
+      });
+      box.appendChild(list2);
+    }
+
+    recapDetail.appendChild(box);
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function makeStaticChip(label, kind) {
+    const span = document.createElement('span');
+    span.className = 'chip-toggle ' + kind + ' on';
+    span.style.cursor = 'default';
+    span.textContent = label;
+    return span;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- Équipe ----------
+  function updateTeamDateLabel() {
+    teamDateLabel.textContent = formatDateFR(selectedDate);
+  }
+
+  function renderTeamClassOptions() {
+    ensureClasses();
+    if (!teamClass || !db.classes[teamClass]) teamClass = homeClass || sortedClassNames()[0];
+    fillClassSelect(classSelectTeam, teamClass);
+    updateTeamDateLabel();
+    renderLevels();
+  }
+
+  classSelectTeam.addEventListener('change', () => {
+    teamClass = classSelectTeam.value;
+    teamsOutput.innerHTML = '';
+    renderLevels();
+  });
+
+  sportGrid.querySelectorAll('.sport-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSport = btn.dataset.sport;
+      sportGrid.querySelectorAll('.sport-btn').forEach(b => b.classList.toggle('active', b.dataset.sport === currentSport));
+      teamSizeInput.value = SPORT_TEAM_SIZE[currentSport];
+      teamSizeHint.textContent = 'Taille usuelle pour ce sport — modifiable';
+      levelsSportLabel.textContent = SPORT_LABEL[currentSport];
+      if (RANK_SPORTS[currentSport]) {
+        levelsCardTitle.childNodes[0].textContent = 'Classement — ';
+        levelsCardNote.textContent = "Entrez la position de chacun dans le classement : la liste se trie automatiquement du n°1 au dernier. Chaque saisie s'ajoute à l'historique de l'élève (visible sous son nom) pour calculer une moyenne au fil des séances. Les élèves absents ou dispensés sont grisés et exclus du tirage.";
+      } else {
+        levelsCardTitle.childNodes[0].textContent = 'Niveaux — ';
+        levelsCardNote.textContent = 'Les élèves absents ou dispensés sont grisés et exclus du tirage.';
+      }
+      levelsCard.style.display = 'block';
+      composeCard.style.display = 'block';
+      teamsOutput.innerHTML = '';
+      renderLevels();
+    });
+  });
+
+  function renderLevels() {
+    if (!currentSport) return;
+    const isRank = !!RANK_SPORTS[currentSport];
+    let list = students(teamClass).slice();
+
+    if (isRank) {
+      list.sort((a, b) => {
+        const av = a.levels[currentSport], bv = b.levels[currentSport];
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        return av - bv;
+      });
+    }
+
+    rosterTeam.innerHTML = '';
+    if (list.length === 0) { rosterEmptyTeam.style.display = 'block'; return; }
+    rosterEmptyTeam.style.display = 'none';
+
+    list.forEach(st => {
+      const att = getAtt(teamClass, selectedDate, st.id);
+      const row = document.createElement('div');
+      row.className = 'row';
+      if (att.absent || att.dispense) row.style.opacity = '0.5';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = st.name;
+      row.appendChild(nameEl);
+
+      const badges = document.createElement('div');
+      badges.className = 'chip-group';
+      if (att.absent) badges.appendChild(textBadge('Absent'));
+      if (att.dispense) badges.appendChild(textBadge('Dispensé'));
+      if (att.oubliTenue) badges.appendChild(textBadge('Sans tenue'));
+      row.appendChild(badges);
+
+      if (isRank) {
+        const rankInput = document.createElement('input');
+        rankInput.type = 'number';
+        rankInput.min = '1';
+        rankInput.className = 'rank-input';
+        rankInput.placeholder = '—';
+        if (st.levels[currentSport] != null) rankInput.value = st.levels[currentSport];
+        rankInput.title = 'Classement pour la séance du ' + formatDateFR(selectedDate);
+        rankInput.addEventListener('change', () => {
+          const v = parseInt(rankInput.value, 10);
+          const val = isNaN(v) ? null : v;
+          st.levels[currentSport] = val;
+          if (val != null) {
+            st.rankHistory[currentSport] = st.rankHistory[currentSport] || {};
+            st.rankHistory[currentSport][selectedDate] = val;
+          }
+          saveDB();
+          renderLevels();
+        });
+        row.appendChild(rankInput);
+
+        const entries = rankHistoryEntries(st, currentSport);
+        if (entries.length > 0) {
+          const hist = document.createElement('div');
+          hist.style.flexBasis = '100%';
+          hist.style.display = 'flex';
+          hist.style.flexWrap = 'wrap';
+          hist.style.alignItems = 'center';
+          hist.style.gap = '6px';
+          hist.style.marginTop = '4px';
+
+          const label = document.createElement('span');
+          label.style.fontSize = '0.78rem';
+          label.style.color = 'var(--ink-soft)';
+          label.textContent = 'Historique :';
+          hist.appendChild(label);
+
+          entries.forEach(e => {
+            const pill = document.createElement('span');
+            pill.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:0.76rem;padding:3px 6px;border-radius:12px;background:var(--slate-soft);color:var(--ink-soft);';
+            pill.textContent = formatDateFR(e.date) + ' : ' + e.rank;
+
+            const delX = document.createElement('button');
+            delX.type = 'button';
+            delX.textContent = '✕';
+            delX.title = 'Effacer ce résultat';
+            delX.style.cssText = 'border:none;background:none;color:var(--danger);cursor:pointer;font-size:0.75rem;padding:0 0 0 2px;line-height:1;';
+            delX.addEventListener('click', () => {
+              delete st.rankHistory[currentSport][e.date];
+              if (st.levels[currentSport] === e.rank) {
+                const remaining = rankHistoryEntries(st, currentSport);
+                st.levels[currentSport] = remaining.length ? remaining[remaining.length - 1].rank : null;
+              }
+              saveDB();
+              renderLevels();
+            });
+            pill.appendChild(delX);
+            hist.appendChild(pill);
+          });
+
+          if (entries.length > 1) {
+            const avgSpan = document.createElement('span');
+            avgSpan.style.fontSize = '0.78rem';
+            avgSpan.style.color = 'var(--ink-soft)';
+            avgSpan.style.fontWeight = '600';
+            avgSpan.textContent = 'moyenne ' + rankAverage(st, currentSport).toFixed(1).replace('.', ',');
+            hist.appendChild(avgSpan);
+          }
+
+          if (entries.length > 1) {
+            const clearAllBtn = document.createElement('button');
+            clearAllBtn.type = 'button';
+            clearAllBtn.textContent = 'Tout effacer';
+            clearAllBtn.style.cssText = 'border:none;background:none;color:var(--danger);cursor:pointer;font-size:0.74rem;text-decoration:underline;padding:0;';
+            clearAllBtn.addEventListener('click', () => {
+              if (!confirm('Effacer tout l\'historique de classement de ' + st.name + ' en ' + SPORT_LABEL[currentSport] + ' ?')) return;
+              st.rankHistory[currentSport] = {};
+              st.levels[currentSport] = null;
+              saveDB();
+              renderLevels();
+            });
+            hist.appendChild(clearAllBtn);
+          }
+
+          row.appendChild(hist);
+        }
+      } else {
+        const lvlSel = document.createElement('select');
+        lvlSel.className = 'level-select';
+        for (let i = 1; i <= 5; i++) {
+          const o = document.createElement('option');
+          o.value = i; o.textContent = 'Niv. ' + i;
+          if (st.levels[currentSport] === i) o.selected = true;
+          lvlSel.appendChild(o);
+        }
+        lvlSel.addEventListener('change', () => {
+          st.levels[currentSport] = parseInt(lvlSel.value, 10);
+          saveDB();
+        });
+        row.appendChild(lvlSel);
+      }
+
+      rosterTeam.appendChild(row);
+    });
+  }
+
+  function textBadge(text) {
+    const span = document.createElement('span');
+    span.className = 'summary-chip';
+    span.style.fontSize = '0.72rem';
+    span.textContent = text;
+    return span;
+  }
+
+  function rankHistoryEntries(st, sport) {
+    const hist = (st.rankHistory && st.rankHistory[sport]) || {};
+    return Object.keys(hist).sort().map(date => ({ date: date, rank: hist[date] }));
+  }
+
+  function rankAverage(st, sport) {
+    const entries = rankHistoryEntries(st, sport);
+    if (entries.length === 0) return null;
+    const sum = entries.reduce((s, e) => s + e.rank, 0);
+    return sum / entries.length;
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    modeHetero.classList.toggle('active', mode === 'hetero');
+    modeHomo.classList.toggle('active', mode === 'homo');
+    modeHint.textContent = mode === 'hetero'
+      ? "Équipes équilibrées : chaque équipe mélange des niveaux différents."
+      : "Équipes groupées par niveau proche : les équipes se ressemblent moins entre elles, mais sont homogènes en interne.";
+  }
+  modeHetero.addEventListener('click', () => setMode('hetero'));
+  modeHomo.addEventListener('click', () => setMode('homo'));
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function teamSizes(n, k) {
+    const base = Math.floor(n / k);
+    const rem = n % k;
+    const sizes = [];
+    for (let i = 0; i < k; i++) sizes.push(base + (i < rem ? 1 : 0));
+    return sizes;
+  }
+
+  function generateTeams() {
+    statusMsg.textContent = '';
+    if (!currentSport) { statusMsg.textContent = "Choisissez d'abord une pratique."; return; }
+    const isRank = !!RANK_SPORTS[currentSport];
+
+    const active = students(teamClass)
+      .filter(s => {
+        const att = getAtt(teamClass, selectedDate, s.id);
+        return !att.absent && !att.dispense;
+      })
+      .map(s => {
+        const att = getAtt(teamClass, selectedDate, s.id);
+        const raw = s.levels[currentSport];
+        return { id: s.id, name: s.name, level: (raw == null ? (isRank ? 999 : 3) : raw), oubliTenue: att.oubliTenue };
+      });
+    const teamSize = parseInt(teamSizeInput.value, 10);
+
+    if (active.length === 0) {
+      statusMsg.textContent = "Aucun élève disponible dans cette classe pour cette séance.";
+      teamsOutput.innerHTML = '';
+      return;
+    }
+    if (!teamSize || teamSize < 1) { statusMsg.textContent = "Indiquez un nombre de joueurs par équipe valide."; return; }
+    if (teamSize > active.length) { statusMsg.textContent = "Le nombre de joueurs par équipe dépasse le nombre d'élèves disponibles."; return; }
+
+    const nbTeams = Math.max(1, Math.round(active.length / teamSize));
+    const sizes = teamSizes(active.length, nbTeams);
+    let pool = shuffle(active);
+    let teams = Array.from({ length: nbTeams }, () => []);
+
+    if (currentMode === 'homo') {
+      pool.sort((a, b) => a.level - b.level);
+      let idx = 0;
+      for (let t = 0; t < nbTeams; t++) { for (let i = 0; i < sizes[t]; i++) { teams[t].push(pool[idx]); idx++; } }
+    } else {
+      pool.sort((a, b) => b.level - a.level);
+      let t = 0, dir = 1;
+      const capacity = sizes.slice();
+      const filled = new Array(nbTeams).fill(0);
+      for (let i = 0; i < pool.length; i++) {
+        let attempts = 0;
+        while (filled[t] >= capacity[t] && attempts < nbTeams) {
+          t += dir;
+          if (t >= nbTeams) { t = nbTeams - 1; dir = -1; }
+          if (t < 0) { t = 0; dir = 1; }
+          attempts++;
+        }
+        teams[t].push(pool[i]);
+        filled[t]++;
+        t += dir;
+        if (t >= nbTeams) { t = nbTeams - 1; dir = -1; }
+        if (t < 0) { t = 0; dir = 1; }
+      }
+    }
+
+    renderTeams(teams, isRank);
+  }
+
+  function renderTeams(teams, isRank) {
+    const wrap = document.createElement('div');
+
+    const meta = document.createElement('div');
+    meta.className = 'teams-meta';
+    meta.textContent = teamClass + ' · ' + SPORT_LABEL[currentSport] + ' · ' + formatDateFR(selectedDate) + ' · ' + teams.length + ' équipe' + (teams.length > 1 ? 's' : '');
+    wrap.appendChild(meta);
+
+    const grid = document.createElement('div');
+    grid.className = 'teams-grid';
+
+    teams.forEach((team, i) => {
+      const card = document.createElement('div');
+      card.className = 'team-card';
+
+      const head = document.createElement('div');
+      head.className = 'team-head';
+      const tName = document.createElement('div');
+      tName.className = 't-name';
+      tName.textContent = 'Équipe ' + (i + 1);
+      const avg = team.length ? (team.reduce((s, p) => s + p.level, 0) / team.length) : 0;
+      const tAvg = document.createElement('div');
+      tAvg.className = 't-avg';
+      tAvg.textContent = team.length ? (isRank ? 'classement moy. ' + avg.toFixed(0) : 'niveau moy. ' + avg.toFixed(1)) : '';
+      head.appendChild(tName);
+      head.appendChild(tAvg);
+      card.appendChild(head);
+
+      const body = document.createElement('div');
+      body.className = 'team-body';
+      team.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 't-player';
+        const nm = document.createElement('span');
+        nm.textContent = p.name + (p.oubliTenue ? ' 👕' : '');
+        row.appendChild(nm);
+        if (isRank) {
+          const rk = document.createElement('span');
+          rk.className = 't-rank';
+          rk.textContent = '#' + p.level;
+          row.appendChild(rk);
+        } else {
+          const lvl = document.createElement('span');
+          lvl.className = 't-level';
+          for (let d = 1; d <= 5; d++) {
+            const dot = document.createElement('span');
+            dot.className = 'dot' + (d <= p.level ? ' filled' : '');
+            lvl.appendChild(dot);
+          }
+          row.appendChild(lvl);
+        }
+        body.appendChild(row);
+      });
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+
+    wrap.appendChild(grid);
+
+    const excluded = students(teamClass).filter(s => {
+      const att = getAtt(teamClass, selectedDate, s.id);
+      return att.absent || att.dispense;
+    });
+    if (excluded.length > 0) {
+      const note = document.createElement('div');
+      note.className = 'absent-note';
+      note.textContent = 'Exclu(s) (absent / dispensé) : ' + excluded.map(s => s.name).join(', ');
+      wrap.appendChild(note);
+    }
+
+    const regenBtn = document.createElement('button');
+    regenBtn.className = 'btn secondary';
+    regenBtn.style.marginTop = '16px';
+    regenBtn.type = 'button';
+    regenBtn.textContent = '🔀 Retirer au sort';
+    regenBtn.addEventListener('click', generateTeams);
+    wrap.appendChild(regenBtn);
+
+    teamsOutput.innerHTML = '';
+    teamsOutput.appendChild(wrap);
+  }
+
+  generateBtn.addEventListener('click', generateTeams);
+
+  // ---------- Évaluation ----------
+  evalSportGrid.querySelectorAll('.sport-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      evalSport = btn.dataset.evalSport;
+      evalSportGrid.querySelectorAll('.sport-btn').forEach(b => b.classList.toggle('active', b === btn));
+      const niveauxKeys = Object.keys(EVAL_DEFS[evalSport].niveaux);
+      evalNiveau = niveauxKeys[0];
+      evalExpandedStudent = null;
+      updateNiveauButtons();
+      renderEvalClassOptions();
+    });
+  });
+
+  function updateNiveauButtons() {
+    const niveaux = EVAL_DEFS[evalSport].niveaux;
+    const keys = Object.keys(niveaux);
+    niveauBacBtn.textContent = niveaux[keys[0]].label;
+    niveauBacBtn.dataset.niveau = keys[0];
+    niveauBacBtn.classList.toggle('active', evalNiveau === keys[0]);
+    if (keys.length > 1) {
+      niveauCollegeBtn.style.display = '';
+      niveauCollegeBtn.textContent = niveaux[keys[1]].label;
+      niveauCollegeBtn.dataset.niveau = keys[1];
+      niveauCollegeBtn.classList.toggle('active', evalNiveau === keys[1]);
+    } else {
+      niveauCollegeBtn.style.display = 'none';
+    }
+  }
+
+  function selectNiveau(niveauKey) {
+    evalNiveau = niveauKey;
+    updateNiveauButtons();
+    evalExpandedStudent = null;
+    updateExportUI();
+    renderEvalRoster();
+  }
+  niveauBacBtn.addEventListener('click', () => selectNiveau(niveauBacBtn.dataset.niveau));
+  niveauCollegeBtn.addEventListener('click', () => selectNiveau(niveauCollegeBtn.dataset.niveau));
+
+  function updateExportUI() {
+    const def = EVAL_DEFS[evalSport].niveaux[evalNiveau];
+    const exportable = (def.kind === 'aflp' || def.kind === 'flat');
+    evalExportNote.style.display = exportable ? 'block' : 'none';
+    exportAllBtn.style.display = exportable ? 'inline-block' : 'none';
+  }
+
+  classSelectEval.addEventListener('change', () => {
+    evalClass = classSelectEval.value;
+    evalExpandedStudent = null;
+    renderEvalRoster();
+  });
+
+  exportAllBtn.addEventListener('click', () => {
+    const def = EVAL_DEFS[evalSport].niveaux[evalNiveau];
+    if (def.kind === 'aflp') exportAllAflpGrids(evalClass, def.config);
+    else if (def.kind === 'flat') exportAllFlatGrids(evalClass, def.config);
+  });
+
+  function renderEvalClassOptions() {
+    ensureClasses();
+    if (!evalClass || !db.classes[evalClass]) evalClass = homeClass || sortedClassNames()[0];
+    fillClassSelect(classSelectEval, evalClass);
+    updateNiveauButtons();
+    updateExportUI();
+    renderEvalRoster();
+  }
+
+  function ensureStudentEval(st) {
+    if (!st.eval) st.eval = {};
+    if (!st.eval.badminton) st.eval.badminton = {};
+    if (!st.eval.badminton.bac) st.eval.badminton.bac = {};
+    if (!st.eval.badminton.college) st.eval.badminton.college = {};
+    if (!st.eval.rugby) st.eval.rugby = {};
+    if (!st.eval.rugby.bac) st.eval.rugby.bac = {};
+    if (!st.eval.basket3x3) st.eval.basket3x3 = {};
+    if (!st.eval.basket3x3.bac) st.eval.basket3x3.bac = {};
+    if (!st.eval.basket3x3.college) st.eval.basket3x3.college = {};
+    if (!st.eval.escalade) st.eval.escalade = {};
+    if (!st.eval.escalade.btsa) st.eval.escalade.btsa = {};
+  }
+
+  function currentEvalTotal(st) {
+    const def = EVAL_DEFS[evalSport].niveaux[evalNiveau];
+    if (def.kind === 'aflp') return computeAflpTotal(st.eval[evalSport][evalNiveau]);
+    if (def.kind === 'flat') return computeFlatTotal(st.eval[evalSport][evalNiveau], def.config.criteres);
+    if (def.kind === 'badminton_college') return computeCollegeTotal(st);
+    return null;
+  }
+
+  function renderEvalRoster() {
+    const list = students(evalClass);
+    evalRoster.innerHTML = '';
+    if (list.length === 0) { evalRosterEmpty.style.display = 'block'; return; }
+    evalRosterEmpty.style.display = 'none';
+    const def = EVAL_DEFS[evalSport].niveaux[evalNiveau];
+
+    list.forEach(st => {
+      ensureStudentEval(st);
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.flexDirection = 'column';
+      row.style.alignItems = 'stretch';
+
+      const headRow = document.createElement('div');
+      headRow.style.display = 'flex';
+      headRow.style.justifyContent = 'space-between';
+      headRow.style.alignItems = 'center';
+      headRow.style.width = '100%';
+      headRow.style.cursor = 'pointer';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = st.name;
+      headRow.appendChild(nameEl);
+
+      const badgeWrap = document.createElement('div');
+      badgeWrap.style.display = 'flex';
+      badgeWrap.style.alignItems = 'center';
+      badgeWrap.style.gap = '8px';
+      const total = currentEvalTotal(st);
+      const badge = document.createElement('span');
+      badge.className = 'summary-chip';
+      badge.id = 'evalBadge-' + st.id;
+      if (total != null) { badge.classList.add('amberc'); badge.textContent = String(total.toFixed(1)).replace('.', ',') + ' / 20'; }
+      else { badge.textContent = 'Non noté'; }
+      badgeWrap.appendChild(badge);
+      const chevron = document.createElement('span');
+      chevron.textContent = (evalExpandedStudent === st.id) ? '▲' : '▼';
+      chevron.style.color = 'var(--ink-soft)';
+      chevron.style.fontSize = '0.8rem';
+      badgeWrap.appendChild(chevron);
+      headRow.appendChild(badgeWrap);
+
+      headRow.addEventListener('click', () => {
+        evalExpandedStudent = (evalExpandedStudent === st.id) ? null : st.id;
+        renderEvalRoster();
+      });
+      row.appendChild(headRow);
+
+      if (evalExpandedStudent === st.id) {
+        const formWrap = document.createElement('div');
+        formWrap.style.width = '100%';
+        formWrap.style.marginTop = '14px';
+        formWrap.style.paddingTop = '14px';
+        formWrap.style.borderTop = '1px solid var(--line)';
+        row.appendChild(formWrap);
+        if (def.kind === 'aflp') renderAflpForm(formWrap, st, def.config, st.eval[evalSport][evalNiveau]);
+        else if (def.kind === 'flat') renderFlatForm(formWrap, st, def.config, st.eval[evalSport][evalNiveau]);
+        else if (def.kind === 'badminton_college') renderCollegeForm(formWrap, st);
+      }
+
+      evalRoster.appendChild(row);
+    });
+  }
+
+  function updateEvalRowBadge(st) {
+    const badge = document.getElementById('evalBadge-' + st.id);
+    if (!badge) return;
+    const total = currentEvalTotal(st);
+    if (total != null) { badge.classList.add('amberc'); badge.textContent = String(total.toFixed(1)).replace('.', ',') + ' / 20'; }
+    else { badge.classList.remove('amberc'); badge.textContent = 'Non noté'; }
+  }
+
+  // -- Bac --
+  function quarterRange(max, idx) {
+    const step = max / 4;
+    const lo = Math.round(step * idx * 2) / 2;
+    const hi = Math.round(step * (idx + 1) * 2) / 2;
+    return [lo, hi];
+  }
+  function rangeMid(range) { return Math.round(((range[0] + range[1]) / 2) * 2) / 2; }
+  function fmtNum(n) { return (n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ',')); }
+  function fmtRange(range) { return fmtNum(range[0]) + ' → ' + fmtNum(range[1]) + ' pts'; }
+
+  function buildAflpBlock(def, max, current, onSet, onComment) {
+    const wrap = document.createElement('div');
+    wrap.style.marginBottom = '14px';
+    wrap.style.paddingBottom = '12px';
+    wrap.style.borderBottom = '1px solid var(--line)';
+
+    const titleEl = document.createElement('div');
+    titleEl.style.fontWeight = '600';
+    titleEl.style.fontSize = '0.9rem';
+    titleEl.style.marginBottom = '8px';
+    titleEl.textContent = def.label + (max != null ? ' (' + fmtNum(max) + ' pts)' : '');
+    wrap.appendChild(titleEl);
+
+    if (max == null) {
+      const note = document.createElement('div');
+      note.className = 'card-note';
+      note.style.margin = '0';
+      note.textContent = "Choisissez d'abord une répartition ci-dessus.";
+      wrap.appendChild(note);
+      return wrap;
+    }
+
+    const degBtns = document.createElement('div');
+    degBtns.style.display = 'flex';
+    degBtns.style.gap = '6px';
+    degBtns.style.flexWrap = 'wrap';
+    degBtns.style.marginBottom = '10px';
+
+    def.degres.forEach((dg, idx) => {
+      const range = dg.range || quarterRange(max, idx);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sport-btn';
+      btn.style.flex = '1 1 140px';
+      btn.style.padding = '8px 8px';
+      btn.style.textAlign = 'center';
+      if (current.degre === dg.d) btn.classList.add('active');
+      btn.innerHTML = '<span style="font-weight:700;">Degré ' + dg.d + '</span>' +
+        '<span style="font-weight:400;font-size:0.7rem;line-height:1.3;">' + dg.text + '</span>' +
+        '<span style="font-weight:700;font-size:0.75rem;">' + fmtRange(range) + '</span>';
+      btn.addEventListener('click', () => onSet(dg.d, rangeMid(range)));
+      degBtns.appendChild(btn);
+    });
+    wrap.appendChild(degBtns);
+
+    const noteRow = document.createElement('div');
+    noteRow.style.display = 'flex';
+    noteRow.style.alignItems = 'center';
+    noteRow.style.gap = '8px';
+    const noteLabel = document.createElement('span');
+    noteLabel.style.fontSize = '0.85rem';
+    noteLabel.style.color = 'var(--ink-soft)';
+    noteLabel.textContent = 'Note :';
+    const noteInput = document.createElement('input');
+    noteInput.type = 'number';
+    noteInput.step = '0.5';
+    noteInput.min = '0';
+    noteInput.max = String(max);
+    noteInput.style.width = '80px';
+    noteInput.style.fontWeight = '700';
+    if (current.note != null) noteInput.value = current.note;
+    noteInput.addEventListener('change', () => {
+      let v = parseFloat(noteInput.value);
+      if (isNaN(v)) v = null;
+      if (v != null) { if (v < 0) v = 0; if (v > max) v = max; }
+      onSet(current.degre, v);
+    });
+    noteRow.appendChild(noteLabel);
+    noteRow.appendChild(noteInput);
+    noteRow.appendChild(document.createTextNode(' / ' + fmtNum(max)));
+    wrap.appendChild(noteRow);
+
+    const commentWrap = document.createElement('div');
+    commentWrap.style.marginTop = '10px';
+    const commentLabel = document.createElement('label');
+    commentLabel.style.cssText = 'display:block;font-size:0.8rem;color:var(--ink-soft);margin-bottom:4px;';
+    commentLabel.textContent = 'Commentaire';
+    const commentInput = document.createElement('textarea');
+    commentInput.rows = 2;
+    commentInput.style.cssText = 'width:100%;font-family:inherit;font-size:0.85rem;padding:8px;border-radius:7px;border:1px solid var(--line);background:var(--chalk);color:var(--ink);resize:vertical;box-sizing:border-box;';
+    commentInput.placeholder = 'Observation, point à travailler…';
+    if (current.comment) commentInput.value = current.comment;
+    commentInput.addEventListener('change', () => onComment(commentInput.value));
+    commentWrap.appendChild(commentLabel);
+    commentWrap.appendChild(commentInput);
+    wrap.appendChild(commentWrap);
+
+    return wrap;
+  }
+
+  function buildRepartitionRow(current, onSet) {
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.gap = '8px';
+    wrap.style.marginBottom = '16px';
+    wrap.style.flexWrap = 'wrap';
+    Object.keys(BAC_REPARTITIONS).forEach(key => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sport-btn';
+      btn.style.flex = '1 1 110px';
+      btn.textContent = 'Choix ' + key.replace('-', ' / ');
+      if (current === key) btn.classList.add('active');
+      btn.addEventListener('click', () => onSet(key));
+      wrap.appendChild(btn);
+    });
+    return wrap;
+  }
+
+  // -- AFLP (Badminton Bac / Rugby) : total, formulaire, export --
+  function computeAflpTotal(ev) {
+    const vals = [ev.aflp1_note, ev.aflp2_note, ev.aflp5_note, ev.aflp4_note];
+    if (vals.every(v => v == null)) return null;
+    return vals.reduce((s, v) => s + (v || 0), 0);
+  }
+
+  function renderAflpForm(container, st, config, ev) {
+    container.innerHTML = '';
+
+    const p1Title = document.createElement('div');
+    p1Title.style.fontWeight = '700';
+    p1Title.style.marginBottom = '10px';
+    p1Title.style.color = 'var(--tatami-dark)';
+    p1Title.textContent = 'Partie 1 — Performance et maîtrise motrice (12 pts)';
+    container.appendChild(p1Title);
+
+    container.appendChild(buildAflpBlock(config.aflp1, config.aflp1.max, { degre: ev.aflp1_degre, note: ev.aflp1_note, comment: ev.aflp1_comment }, (d, n) => {
+      ev.aflp1_degre = d; ev.aflp1_note = n; saveDB(); renderAflpForm(container, st, config, ev); updateEvalRowBadge(st);
+    }, (c) => { ev.aflp1_comment = c; saveDB(); }));
+    container.appendChild(buildAflpBlock(config.aflp2, config.aflp2.max, { degre: ev.aflp2_degre, note: ev.aflp2_note, comment: ev.aflp2_comment }, (d, n) => {
+      ev.aflp2_degre = d; ev.aflp2_note = n; saveDB(); renderAflpForm(container, st, config, ev); updateEvalRowBadge(st);
+    }, (c) => { ev.aflp2_comment = c; saveDB(); }));
+
+    const p2Title = document.createElement('div');
+    p2Title.style.fontWeight = '700';
+    p2Title.style.margin = '18px 0 10px';
+    p2Title.style.color = 'var(--tatami-dark)';
+    p2Title.textContent = 'Partie 2 — Méthodes, outils et rôles sociaux (8 pts)';
+    container.appendChild(p2Title);
+
+    container.appendChild(buildRepartitionRow(ev.repartition, (key) => {
+      ev.repartition = key;
+      const pair = BAC_REPARTITIONS[key];
+      if (ev.aflp5_note != null && ev.aflp5_note > pair[0]) ev.aflp5_note = pair[0];
+      if (ev.aflp4_note != null && ev.aflp4_note > pair[1]) ev.aflp4_note = pair[1];
+      saveDB(); renderAflpForm(container, st, config, ev); updateEvalRowBadge(st);
+    }));
+
+    const max5 = ev.repartition ? BAC_REPARTITIONS[ev.repartition][0] : null;
+    const max4 = ev.repartition ? BAC_REPARTITIONS[ev.repartition][1] : null;
+
+    container.appendChild(buildAflpBlock(config.aflp5, max5, { degre: ev.aflp5_degre, note: ev.aflp5_note, comment: ev.aflp5_comment }, (d, n) => {
+      ev.aflp5_degre = d; ev.aflp5_note = n; saveDB(); renderAflpForm(container, st, config, ev); updateEvalRowBadge(st);
+    }, (c) => { ev.aflp5_comment = c; saveDB(); }));
+    container.appendChild(buildAflpBlock(config.aflp4, max4, { degre: ev.aflp4_degre, note: ev.aflp4_note, comment: ev.aflp4_comment }, (d, n) => {
+      ev.aflp4_degre = d; ev.aflp4_note = n; saveDB(); renderAflpForm(container, st, config, ev); updateEvalRowBadge(st);
+    }, (c) => { ev.aflp4_comment = c; saveDB(); }));
+
+    const total = computeAflpTotal(ev);
+    const totalRow = document.createElement('div');
+    totalRow.style.cssText = 'margin-top:16px;padding-top:14px;border-top:2px solid var(--gold);display:flex;justify-content:space-between;align-items:center;';
+    const totalLabel = document.createElement('div');
+    totalLabel.style.fontFamily = "'Oswald', sans-serif";
+    totalLabel.style.fontWeight = '700';
+    totalLabel.style.fontSize = '1.1rem';
+    totalLabel.textContent = 'NOTE FINALE';
+    const totalVal = document.createElement('div');
+    totalVal.style.fontFamily = "'Oswald', sans-serif";
+    totalVal.style.fontWeight = '700';
+    totalVal.style.fontSize = '1.3rem';
+    totalVal.style.color = 'var(--gold)';
+    totalVal.textContent = (total == null ? '—' : fmtNum(total)) + ' / 20';
+    totalRow.appendChild(totalLabel);
+    totalRow.appendChild(totalVal);
+    container.appendChild(totalRow);
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn secondary';
+    exportBtn.style.marginTop = '14px';
+    exportBtn.type = 'button';
+    exportBtn.textContent = '🖨️ Exporter (grille CCF)';
+    exportBtn.addEventListener('click', () => exportAflpGrid(st, config, ev));
+    container.appendChild(exportBtn);
+  }
+
+  // -- Grille fidèle à la grille CCF fournie (tableaux, degrés, répartition) --
+  function gridHeaderRow() {
+    const cols = ['Degré 1<br><span style="font-weight:400;">(Fragile)</span>', 'Degré 2<br><span style="font-weight:400;">(Satisfaisant)</span>', 'Degré 3<br><span style="font-weight:400;">(Très bon)</span>', 'Degré 4<br><span style="font-weight:400;">(Excellent)</span>'];
+    return '<tr><td style="border:1px solid #999;padding:6px;background:#eee;width:170px;"><b>Éléments à évaluer</b></td>' +
+      cols.map(c => '<td style="border:1px solid #999;padding:6px;background:#eee;text-align:center;font-size:0.78rem;">' + c + '</td>').join('') + '</tr>';
+  }
+  function gridCritRow(label, sub, texts, selectedDegre) {
+    let html = '<tr><td style="border:1px solid #999;padding:6px;vertical-align:top;"><b>' + escapeHtml(label) + '</b>' +
+      (sub ? '<br><span style="font-size:0.74rem;font-style:italic;">' + escapeHtml(sub) + '</span>' : '') + '</td>';
+    texts.forEach((text, i) => {
+      const isSel = selectedDegre === (i + 1);
+      html += '<td style="border:1px solid #999;padding:6px;vertical-align:top;font-size:0.76rem;' + (isSel ? 'background:#F0DEC3;font-weight:600;' : '') + '">' +
+        escapeHtml(text) + (isSel ? ' ✓' : '') + '</td>';
+    });
+    html += '</tr>';
+    return html;
+  }
+  function gridPointsRow(label, cells, selectedDegre, noteVal) {
+    let html = '<tr><td style="border:1px solid #999;padding:6px;"><b>' + escapeHtml(label) + '</b></td>';
+    cells.forEach((c, i) => {
+      const isSel = selectedDegre === (i + 1);
+      html += '<td style="border:1px solid #999;padding:6px;text-align:center;font-size:0.78rem;' + (isSel ? 'background:#F0DEC3;font-weight:700;' : '') + '">' +
+        c + (isSel && noteVal != null ? '<br>→ ' + fmtNum(noteVal) + ' pts' : '') + '</td>';
+    });
+    html += '</tr>';
+    return html;
+  }
+
+  function commentLine(comment) {
+    if (!comment) return '';
+    return '<p style="margin:2px 0 12px;font-size:0.78rem;font-style:italic;color:#444;"><b>Commentaire :</b> ' + escapeHtml(comment) + '</p>';
+  }
+
+  function buildPart1Table(config, ev) {
+    let html = '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;">';
+    html += gridHeaderRow();
+    html += gridCritRow(config.aflp1.label + ' (' + fmtNum(config.aflp1.max) + ' pts)', config.aflp1.sub || '', config.aflp1.degres.map(d => d.text), ev.aflp1_degre);
+    html += gridPointsRow('Gain des matchs (' + config.aflp1.label.split(':')[0].trim() + ')', config.aflp1.degres.map(d => fmtRange(d.range)), ev.aflp1_degre, ev.aflp1_note);
+    html += gridCritRow(config.aflp2.label + ' (' + fmtNum(config.aflp2.max) + ' pts)', config.aflp2.sub || '', config.aflp2.degres.map(d => d.text), ev.aflp2_degre);
+    html += gridPointsRow('Points attribués (' + config.aflp2.label.split(':')[0].trim() + ')', config.aflp2.degres.map(d => fmtRange(d.range)), ev.aflp2_degre, ev.aflp2_note);
+    html += '</table>';
+    html += commentLine(ev.aflp1_comment);
+    html += commentLine(ev.aflp2_comment);
+    return html;
+  }
+
+  function buildPart2Table(config, ev) {
+    const max5 = ev.repartition ? BAC_REPARTITIONS[ev.repartition][0] : null;
+    const max4 = ev.repartition ? BAC_REPARTITIONS[ev.repartition][1] : null;
+
+    let html = '<p style="margin:8px 0 12px;"><b>Choix de répartition :</b> &nbsp;';
+    const keys = Object.keys(BAC_REPARTITIONS);
+    keys.forEach((key, i) => {
+      const checked = ev.repartition === key;
+      html += (checked ? '☑' : '☐') + ' <b>CHOIX ' + (i + 1) + '</b> (' + key.replace('-', '/') + ')' + (i < keys.length - 1 ? ' &nbsp;|&nbsp; ' : '');
+    });
+    html += '</p>';
+
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;">';
+    html += gridHeaderRow();
+    html += gridCritRow(config.aflp5.label, '', config.aflp5.degres.map(d => d.text), ev.aflp5_degre);
+    if (max5 != null) html += gridPointsRow('Points attribués (/' + fmtNum(max5) + ')', config.aflp5.degres.map((d, i) => fmtRange(quarterRange(max5, i))), ev.aflp5_degre, ev.aflp5_note);
+    html += gridCritRow(config.aflp4.label, '', config.aflp4.degres.map(d => d.text), ev.aflp4_degre);
+    if (max4 != null) html += gridPointsRow('Points attribués (/' + fmtNum(max4) + ')', config.aflp4.degres.map((d, i) => fmtRange(quarterRange(max4, i))), ev.aflp4_degre, ev.aflp4_note);
+    html += '</table>';
+    html += commentLine(ev.aflp5_comment);
+    html += commentLine(ev.aflp4_comment);
+    return html;
+  }
+
+  function buildStudentAflpGridHtml(st, className, config, ev, title, withPageBreak) {
+    const total = computeAflpTotal(ev);
+    return '<div style="max-width:760px;margin:0 auto 20px;' + (withPageBreak ? 'page-break-after:always;' : '') + '">' +
+      '<h1 style="font-family:Oswald,sans-serif;font-size:1.2rem;margin:0 0 4px;">PRINCIPE DE L\'ÉPREUVE — ' + escapeHtml(title) + '</h1>' +
+      '<p style="font-size:0.78rem;color:#444;margin:0 0 16px;">' + escapeHtml(config.intro || '') + '</p>' +
+      '<p style="margin:0 0 14px;"><strong>Élève :</strong> ' + escapeHtml(st.name) + ' &nbsp; <strong>Classe :</strong> ' + escapeHtml(className) + ' &nbsp; <strong>Date :</strong> ' + formatDateFR(todayStr()) + '</p>' +
+      '<h2 style="font-family:Oswald,sans-serif;font-size:1rem;border-bottom:2px solid #C8914E;padding-bottom:4px;">PARTIE 1 : PERFORMANCE ET MAÎTRISE MOTRICE (12 POINTS)</h2>' +
+      buildPart1Table(config, ev) +
+      '<h2 style="font-family:Oswald,sans-serif;font-size:1rem;border-bottom:2px solid #C8914E;padding-bottom:4px;margin-top:16px;">PARTIE 2 : MÉTHODES, OUTILS ET RÔLES SOCIAUX (8 POINTS)</h2>' +
+      buildPart2Table(config, ev) +
+      '<div style="margin-top:10px;padding-top:14px;border-top:3px solid #1C2B33;font-family:Oswald,sans-serif;font-size:1.2rem;font-weight:700;">BILAN ET NOTATION &nbsp;—&nbsp; NOTE FINALE : ' + (total != null ? fmtNum(total) : '______') + ' / 20</div>' +
+      '<div style="margin-top:40px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;font-size:0.85rem;"><div>Élève : ______________________</div><div>Enseignant : ______________________</div></div>' +
+      '</div>';
+  }
+
+  function openPrintWindow(title, contentHtml) {
+    const overlay = document.createElement('div');
+    overlay.id = 'printOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;overflow:auto;padding:32px 20px;color:#1C2B33;font-family:Inter,sans-serif;';
+    overlay.innerHTML =
+      '<div style="max-width:760px;margin:0 auto;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:10px;">' +
+      '<div style="font-weight:600;">Aperçu — ' + escapeHtml(title) + '</div>' +
+      '<div>' +
+      '<button id="printBtn" style="margin-right:8px;padding:8px 14px;border-radius:7px;border:none;background:#3C6E58;color:#fff;font-weight:600;cursor:pointer;">🖨️ Imprimer / PDF</button>' +
+      '<button id="closePrintBtn" style="padding:8px 14px;border-radius:7px;border:1px solid #999;background:#fff;cursor:pointer;">Fermer</button>' +
+      '</div></div>' +
+      '<p style="font-size:0.82rem;color:#666;margin:0 0 20px;">Si le bouton ne fait rien, utilisez Ctrl+P (ou Cmd+P sur Mac) directement, ou touche Partager → Imprimer sur mobile.</p>' +
+      '</div>' +
+      '<div id="printableContent">' + contentHtml + '</div>';
+
+    document.body.appendChild(overlay);
+    document.getElementById('closePrintBtn').addEventListener('click', () => overlay.remove());
+    document.getElementById('printBtn').addEventListener('click', () => {
+      let opened = null;
+      try { opened = window.open('', '_blank'); } catch (e) { opened = null; }
+      if (opened) {
+        opened.document.open();
+        opened.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title></head><body style="font-family:Inter,Arial,sans-serif;color:#1C2B33;padding:24px;">' + contentHtml + '</body></html>');
+        opened.document.close();
+        opened.focus();
+        setTimeout(() => { try { opened.print(); } catch (e) {} }, 350);
+      } else {
+        window.print();
+      }
+    });
+  }
+
+  function evalSportLabel() { return EVAL_DEFS[evalSport] ? EVAL_DEFS[evalSport].label : evalSport; }
+
+  function exportAflpGrid(st, config, ev) {
+    openPrintWindow('Grille CCF — ' + st.name, buildStudentAflpGridHtml(st, evalClass, config, ev, evalSportLabel(), false));
+  }
+
+  function exportAllAflpGrids(className, config) {
+    const list = students(className);
+    if (list.length === 0) return;
+    const content = list.map((st, i) => {
+      ensureStudentEval(st);
+      const ev = st.eval[evalSport][evalNiveau];
+      return buildStudentAflpGridHtml(st, className, config, ev, evalSportLabel(), i < list.length - 1);
+    }).join('');
+    openPrintWindow('Grilles CCF — ' + className, content);
+  }
+
+  // -- Grilles "plates" (Basket 3x3) : total, formulaire, export --
+  function computeFlatTotal(ev, criteres) {
+    const hasAny = criteres.some(c => ev[c.key] != null);
+    if (!hasAny) return null;
+    return criteres.reduce((s, c) => s + (ev[c.key] || 0), 0);
+  }
+
+  function renderFlatForm(container, st, gridDef, ev) {
+    container.innerHTML = '';
+    gridDef.criteres.forEach(crit => {
+      const wrap = document.createElement('div');
+      wrap.style.marginBottom = '14px';
+      wrap.style.paddingBottom = '12px';
+      wrap.style.borderBottom = '1px solid var(--line)';
+
+      const titleEl = document.createElement('div');
+      titleEl.style.fontWeight = '600';
+      titleEl.style.fontSize = '0.9rem';
+      titleEl.style.marginBottom = '8px';
+      titleEl.textContent = crit.label + ' (' + fmtNum(crit.max) + ' pts)';
+      wrap.appendChild(titleEl);
+
+      const btnRow = document.createElement('div');
+      btnRow.style.display = 'flex';
+      btnRow.style.gap = '6px';
+      btnRow.style.flexWrap = 'wrap';
+      btnRow.style.marginBottom = '10px';
+      crit.levels.forEach((lvl, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sport-btn';
+        btn.style.flex = '1 1 140px';
+        btn.style.padding = '8px 8px';
+        const curVal = ev[crit.key];
+        const isSelected = curVal != null && curVal >= lvl.range[0] && curVal <= lvl.range[1];
+        if (isSelected) btn.classList.add('active');
+        btn.innerHTML = '<span style="font-weight:700;">' + gridDef.levelNames[idx] + '</span>' +
+          '<span style="font-weight:400;font-size:0.7rem;line-height:1.3;">' + lvl.text + '</span>' +
+          '<span style="font-weight:700;font-size:0.75rem;">' + fmtRange(lvl.range) + '</span>';
+        btn.addEventListener('click', () => {
+          ev[crit.key] = rangeMid(lvl.range);
+          saveDB(); renderFlatForm(container, st, gridDef, ev); updateEvalRowBadge(st);
+        });
+        btnRow.appendChild(btn);
+      });
+      wrap.appendChild(btnRow);
+
+      const noteRow = document.createElement('div');
+      noteRow.style.display = 'flex';
+      noteRow.style.alignItems = 'center';
+      noteRow.style.gap = '8px';
+      const noteLabel = document.createElement('span');
+      noteLabel.style.fontSize = '0.85rem';
+      noteLabel.style.color = 'var(--ink-soft)';
+      noteLabel.textContent = 'Note :';
+      const noteInput = document.createElement('input');
+      noteInput.type = 'number';
+      noteInput.step = '0.5';
+      noteInput.min = '0';
+      noteInput.max = String(crit.max);
+      noteInput.style.width = '80px';
+      noteInput.style.fontWeight = '700';
+      if (ev[crit.key] != null) noteInput.value = ev[crit.key];
+      noteInput.addEventListener('change', () => {
+        let v = parseFloat(noteInput.value);
+        if (isNaN(v)) v = null;
+        if (v != null) { if (v < 0) v = 0; if (v > crit.max) v = crit.max; }
+        ev[crit.key] = v; saveDB(); renderFlatForm(container, st, gridDef, ev); updateEvalRowBadge(st);
+      });
+      noteRow.appendChild(noteLabel);
+      noteRow.appendChild(noteInput);
+      noteRow.appendChild(document.createTextNode(' / ' + fmtNum(crit.max)));
+      wrap.appendChild(noteRow);
+
+      container.appendChild(wrap);
+    });
+
+    const total = computeFlatTotal(ev, gridDef.criteres);
+    const totalRow = document.createElement('div');
+    totalRow.style.cssText = 'margin-top:16px;padding-top:14px;border-top:2px solid var(--gold);display:flex;justify-content:space-between;align-items:center;';
+    const totalLabel = document.createElement('div');
+    totalLabel.style.fontFamily = "'Oswald', sans-serif";
+    totalLabel.style.fontWeight = '700';
+    totalLabel.style.fontSize = '1.1rem';
+    totalLabel.textContent = 'NOTE TOTALE';
+    const totalVal = document.createElement('div');
+    totalVal.style.fontFamily = "'Oswald', sans-serif";
+    totalVal.style.fontWeight = '700';
+    totalVal.style.fontSize = '1.3rem';
+    totalVal.style.color = 'var(--gold)';
+    totalVal.textContent = (total == null ? '—' : fmtNum(total)) + ' / 20';
+    totalRow.appendChild(totalLabel);
+    totalRow.appendChild(totalVal);
+    container.appendChild(totalRow);
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn secondary';
+    exportBtn.style.marginTop = '14px';
+    exportBtn.type = 'button';
+    exportBtn.textContent = '🖨️ Exporter (grille)';
+    exportBtn.addEventListener('click', () => exportFlatGrid(st, gridDef, ev));
+    container.appendChild(exportBtn);
+  }
+
+  function buildStudentFlatGridHtml(st, className, gridDef, ev, withPageBreak) {
+    const total = computeFlatTotal(ev, gridDef.criteres);
+    let rows = '';
+    gridDef.criteres.forEach(crit => {
+      rows += '<tr><td style="border:1px solid #999;padding:6px;vertical-align:top;width:150px;"><b>' + escapeHtml(crit.label) + '</b></td>';
+      crit.levels.forEach(lvl => {
+        const curVal = ev[crit.key];
+        const isSel = curVal != null && curVal >= lvl.range[0] && curVal <= lvl.range[1];
+        rows += '<td style="border:1px solid #999;padding:6px;vertical-align:top;font-size:0.76rem;' + (isSel ? 'background:#F0DEC3;font-weight:600;' : '') + '">' +
+          escapeHtml(lvl.text) + ' (' + fmtRange(lvl.range) + ')' + (isSel ? ' ✓' : '') + '</td>';
+      });
+      rows += '<td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700;">' + (ev[crit.key] != null ? fmtNum(ev[crit.key]) : '') + ' / ' + fmtNum(crit.max) + '</td></tr>';
+    });
+
+    return '<div style="max-width:820px;margin:0 auto 20px;' + (withPageBreak ? 'page-break-after:always;' : '') + '">' +
+      '<h1 style="font-family:Oswald,sans-serif;font-size:1.15rem;margin:0 0 4px;">' + escapeHtml(gridDef.title || "Grille d'évaluation") + '</h1>' +
+      (gridDef.subtitle ? '<p style="font-size:0.78rem;color:#444;margin:0 0 12px;">' + escapeHtml(gridDef.subtitle) + '</p>' : '') +
+      '<p style="margin:0 0 14px;"><strong>Élève :</strong> ' + escapeHtml(st.name) + ' &nbsp; <strong>Classe :</strong> ' + escapeHtml(className) + ' &nbsp; <strong>Date :</strong> ' + formatDateFR(todayStr()) + '</p>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">' +
+      '<tr><td style="border:1px solid #999;padding:6px;background:#eee;"><b>Critère évalué</b></td>' +
+      gridDef.levelNames.map(n => '<td style="border:1px solid #999;padding:6px;background:#eee;text-align:center;font-size:0.76rem;">' + n + '</td>').join('') +
+      '<td style="border:1px solid #999;padding:6px;background:#eee;text-align:center;">Points</td></tr>' +
+      rows +
+      '</table>' +
+      '<div style="margin-top:16px;padding-top:14px;border-top:3px solid #1C2B33;font-family:Oswald,sans-serif;font-size:1.2rem;font-weight:700;">NOTE TOTALE : ' + (total != null ? fmtNum(total) : '______') + ' / 20</div>' +
+      '<div style="margin-top:30px;font-size:0.85rem;"><strong>Observations / commentaire de l\'évaluateur :</strong></div>' +
+      '</div>';
+  }
+
+  function exportFlatGrid(st, gridDef, ev) {
+    openPrintWindow('Grille — ' + st.name, buildStudentFlatGridHtml(st, evalClass, gridDef, ev, false));
+  }
+
+  function exportAllFlatGrids(className, gridDef) {
+    const list = students(className);
+    if (list.length === 0) return;
+    const content = list.map((st, i) => {
+      ensureStudentEval(st);
+      const ev = st.eval[evalSport][evalNiveau];
+      return buildStudentFlatGridHtml(st, className, gridDef, ev, i < list.length - 1);
+    }).join('');
+    openPrintWindow('Grilles — ' + className, content);
+  }
+
+  // -- Collège --
+  function smallNumField(label, value, min, max, onChange, big) {
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.flexDirection = 'column';
+    wrap.style.gap = '4px';
+    const lbl = document.createElement('span');
+    lbl.style.fontSize = '0.78rem';
+    lbl.style.color = 'var(--ink-soft)';
+    lbl.style.fontWeight = '600';
+    lbl.textContent = label;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = String(min);
+    input.max = String(max);
+    input.step = '0.5';
+    input.style.width = big ? '100px' : '80px';
+    if (big) { input.style.fontWeight = '700'; input.style.fontSize = '1rem'; }
+    if (value != null) input.value = value;
+    input.addEventListener('change', () => {
+      let v = parseFloat(input.value);
+      if (isNaN(v)) v = null;
+      if (v != null) { if (v < min) v = min; if (v > max) v = max; }
+      onChange(v);
+    });
+    wrap.appendChild(lbl);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function computeCollegeTotal(st) {
+    const col = st.eval.badminton.college;
+    const hasAny = EVAL_COLLEGE_MAITRISE.some(c => col[c.key] != null) || col.perf_note != null || col.arbitrage_note != null;
+    if (!hasAny) return null;
+    const maitrise = EVAL_COLLEGE_MAITRISE.reduce((s, c) => s + (col[c.key] || 0), 0);
+    return maitrise + (col.perf_note || 0) + (col.arbitrage_note || 0);
+  }
+
+  function renderCollegeForm(container, st) {
+    container.innerHTML = '';
+    const col = st.eval.badminton.college;
+
+    const maitTitle = document.createElement('div');
+    maitTitle.style.fontWeight = '700';
+    maitTitle.style.marginBottom = '10px';
+    maitTitle.style.color = 'var(--tatami-dark)';
+    maitTitle.textContent = 'Maîtrise (12 pts)';
+    container.appendChild(maitTitle);
+
+    EVAL_COLLEGE_MAITRISE.forEach(crit => {
+      const wrap = document.createElement('div');
+      wrap.style.marginBottom = '12px';
+      wrap.style.paddingBottom = '10px';
+      wrap.style.borderBottom = '1px solid var(--line)';
+      const titleEl = document.createElement('div');
+      titleEl.style.fontWeight = '600';
+      titleEl.style.fontSize = '0.88rem';
+      titleEl.style.marginBottom = '6px';
+      titleEl.textContent = crit.label;
+      wrap.appendChild(titleEl);
+
+      const btnRow = document.createElement('div');
+      btnRow.style.display = 'flex';
+      btnRow.style.gap = '6px';
+      btnRow.style.flexWrap = 'wrap';
+      crit.niveaux.forEach(nv => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sport-btn';
+        btn.style.flex = '1 1 130px';
+        btn.style.padding = '8px 6px';
+        if (col[crit.key] === nv.pts) btn.classList.add('active');
+        btn.innerHTML = '<span style="font-weight:700;">' + nv.n + ' — ' + fmtNum(nv.pts) + ' pt' + (nv.pts > 1 ? 's' : '') + '</span>' +
+          '<span style="font-weight:400;font-size:0.7rem;line-height:1.3;">' + nv.text + '</span>';
+        btn.addEventListener('click', () => {
+          col[crit.key] = nv.pts;
+          saveDB(); renderCollegeForm(container, st); updateEvalRowBadge(st);
+        });
+        btnRow.appendChild(btn);
+      });
+      wrap.appendChild(btnRow);
+      container.appendChild(wrap);
+    });
+
+    const perfTitle = document.createElement('div');
+    perfTitle.style.fontWeight = '700';
+    perfTitle.style.margin = '16px 0 10px';
+    perfTitle.style.color = 'var(--tatami-dark)';
+    perfTitle.textContent = 'Performance (6 pts)';
+    container.appendChild(perfTitle);
+
+    const perfRow = document.createElement('div');
+    perfRow.style.display = 'flex';
+    perfRow.style.gap = '10px';
+    perfRow.style.flexWrap = 'wrap';
+    perfRow.style.marginBottom = '10px';
+    perfRow.appendChild(smallNumField('Terrain (1-7)', col.perf_terrain, 1, 7, v => { col.perf_terrain = v; saveDB(); }));
+    perfRow.appendChild(smallNumField('Classement (1-6)', col.perf_classement, 1, 6, v => { col.perf_classement = v; saveDB(); }));
+    container.appendChild(perfRow);
+    container.appendChild(smallNumField('Note Performance / 6', col.perf_note, 0, 6, v => {
+      col.perf_note = v; saveDB(); renderCollegeForm(container, st); updateEvalRowBadge(st);
+    }, true));
+
+    const arbTitle = document.createElement('div');
+    arbTitle.style.fontWeight = '700';
+    arbTitle.style.margin = '16px 0 10px';
+    arbTitle.style.color = 'var(--tatami-dark)';
+    arbTitle.textContent = 'Règles + Arbitrage (2 pts)';
+    container.appendChild(arbTitle);
+    container.appendChild(smallNumField('Note Arbitrage / 2', col.arbitrage_note, 0, 2, v => {
+      col.arbitrage_note = v; saveDB(); renderCollegeForm(container, st); updateEvalRowBadge(st);
+    }, true));
+
+    const total = computeCollegeTotal(st);
+    const totalRow = document.createElement('div');
+    totalRow.style.cssText = 'margin-top:16px;padding-top:14px;border-top:2px solid var(--gold);display:flex;justify-content:space-between;align-items:center;';
+    const totalLabel = document.createElement('div');
+    totalLabel.style.fontFamily = "'Oswald', sans-serif";
+    totalLabel.style.fontWeight = '700';
+    totalLabel.style.fontSize = '1.1rem';
+    totalLabel.textContent = 'NOTE / 20';
+    const totalVal = document.createElement('div');
+    totalVal.style.fontFamily = "'Oswald', sans-serif";
+    totalVal.style.fontWeight = '700';
+    totalVal.style.fontSize = '1.3rem';
+    totalVal.style.color = 'var(--gold)';
+    totalVal.textContent = (total == null ? '—' : fmtNum(total)) + ' / 20';
+    totalRow.appendChild(totalLabel);
+    totalRow.appendChild(totalVal);
+    container.appendChild(totalRow);
+  }
+
+  // ---------- Escalade ----------
+  classSelectClimb.addEventListener('change', () => {
+    climbClass = classSelectClimb.value;
+    climbExpandedStudent = null;
+    climbRecapSelectedStudent = null;
+    renderClimbRoster();
+    if (climbRecapVisible) renderClimbRecap();
+  });
+
+  climbDateInput.addEventListener('change', () => {
+    selectedDate = climbDateInput.value || todayStr();
+    climbExpandedStudent = null;
+    renderClimbRoster();
+  });
+
+  toggleClimbRecapBtn.addEventListener('click', () => {
+    climbRecapVisible = !climbRecapVisible;
+    climbRecapWrap.style.display = climbRecapVisible ? 'block' : 'none';
+    toggleClimbRecapBtn.textContent = climbRecapVisible ? '📊 Masquer le récap' : '📊 Voir le récap';
+    if (climbRecapVisible) renderClimbRecap();
+  });
+
+  // L'escalade ne concerne que la classe BTSA1.
+  function renderClimbClassOptions() {
+    ensureClasses();
+    const avail = classNames().includes('BTSA1') ? ['BTSA1'] : sortedClassNames();
+    climbClass = avail[0] || null;
+    fillClassSelect(classSelectClimb, climbClass, avail);
+    climbDateInput.value = selectedDate;
+    renderClimbRoster();
+    if (climbRecapVisible) renderClimbRecap();
+  }
+
+  function renderClimbRoster() {
+    const list = students(climbClass);
+    climbRoster.innerHTML = '';
+    if (list.length === 0) {
+      climbRosterEmpty.style.display = 'block';
+      climbSummaryRow.innerHTML = '';
+      return;
+    }
+    climbRosterEmpty.style.display = 'none';
+
+    let totalRoutesSession = 0, totalMetersSession = 0;
+    list.forEach(st => {
+      const tot = sessionClimbTotals(climbClass, selectedDate, st.id);
+      totalRoutesSession += tot.routes;
+      totalMetersSession += tot.meters;
+    });
+    climbSummaryRow.innerHTML = '';
+    climbSummaryRow.appendChild(makeSummaryChip(totalRoutesSession + ' voie' + (totalRoutesSession !== 1 ? 's' : '') + ' (séance)', totalRoutesSession > 0 ? 'amberc' : ''));
+    climbSummaryRow.appendChild(makeSummaryChip(fmtNum(totalMetersSession) + ' m réalisés (séance)', totalMetersSession > 0 ? 'amberc' : ''));
+
+    list.forEach(st => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.flexDirection = 'column';
+      row.style.alignItems = 'stretch';
+
+      const headRow = document.createElement('div');
+      headRow.style.display = 'flex';
+      headRow.style.justifyContent = 'space-between';
+      headRow.style.alignItems = 'center';
+      headRow.style.width = '100%';
+      headRow.style.cursor = 'pointer';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = st.name;
+      headRow.appendChild(nameEl);
+
+      const tot = sessionClimbTotals(climbClass, selectedDate, st.id);
+      const badgeWrap = document.createElement('div');
+      badgeWrap.style.display = 'flex';
+      badgeWrap.style.alignItems = 'center';
+      badgeWrap.style.gap = '8px';
+      const badge = document.createElement('span');
+      badge.className = 'summary-chip' + (tot.routes > 0 ? ' amberc' : '');
+      badge.textContent = tot.routes + ' voie' + (tot.routes !== 1 ? 's' : '') + ' · ' + fmtNum(tot.meters) + ' m';
+      badgeWrap.appendChild(badge);
+      const chevron = document.createElement('span');
+      chevron.textContent = (climbExpandedStudent === st.id) ? '▲' : '▼';
+      chevron.style.color = 'var(--ink-soft)';
+      chevron.style.fontSize = '0.8rem';
+      badgeWrap.appendChild(chevron);
+      headRow.appendChild(badgeWrap);
+
+      headRow.addEventListener('click', () => {
+        climbExpandedStudent = (climbExpandedStudent === st.id) ? null : st.id;
+        renderClimbRoster();
+      });
+      row.appendChild(headRow);
+
+      if (climbExpandedStudent === st.id) {
+        const formWrap = document.createElement('div');
+        formWrap.style.width = '100%';
+        formWrap.style.marginTop = '14px';
+        formWrap.style.paddingTop = '14px';
+        formWrap.style.borderTop = '1px solid var(--line)';
+        row.appendChild(formWrap);
+        renderClimbEntryForm(formWrap, st);
+      }
+
+      climbRoster.appendChild(row);
+    });
+  }
+
+  function renderClimbEntryForm(container, st) {
+    container.innerHTML = '';
+    const byClass = db.climbing[climbClass] || {};
+    const allDates = Object.keys(byClass)
+      .filter(d => (byClass[d][st.id] || []).length > 0)
+      .sort()
+      .reverse();
+
+    if (allDates.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'roster-empty';
+      empty.textContent = 'Aucune voie enregistrée pour le moment.';
+      container.appendChild(empty);
+    } else {
+      allDates.forEach(date => {
+        const entries = climbEntries(climbClass, date, st.id);
+        const isCurrent = date === selectedDate;
+        const dateTitle = document.createElement('div');
+        dateTitle.style.cssText = 'font-weight:600;font-size:0.82rem;margin:10px 0 6px;' + (isCurrent ? 'color:var(--tatami-dark);' : 'color:var(--ink-soft);');
+        dateTitle.textContent = formatDateFR(date) + (isCurrent ? ' (séance en cours)' : '');
+        container.appendChild(dateTitle);
+
+        const list = document.createElement('div');
+        list.className = 'roster';
+        list.style.marginBottom = '10px';
+        entries.forEach((e, idx) => {
+          const row = document.createElement('div');
+          row.className = 'row';
+          const info = document.createElement('div');
+          info.className = 'name';
+          info.style.flex = '1 1 auto';
+          info.textContent = 'Voie n°' + e.voie + '  ·  ' + e.difficulte + '  ·  ' + fmtNum(e.hauteur) + ' m';
+          row.appendChild(info);
+          const delBtn = document.createElement('button');
+          delBtn.className = 'del-btn';
+          delBtn.type = 'button';
+          delBtn.textContent = '✕';
+          delBtn.setAttribute('aria-label', 'Supprimer cette voie');
+          delBtn.addEventListener('click', () => {
+            deleteClimbEntry(climbClass, date, st.id, idx);
+            renderClimbRoster();
+          });
+          row.appendChild(delBtn);
+          list.appendChild(row);
+        });
+        container.appendChild(list);
+      });
+    }
+
+    const addLabel = document.createElement('div');
+    addLabel.style.cssText = 'font-size:0.8rem;color:var(--ink-soft);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:12px;';
+    addLabel.textContent = 'Ajouter une voie — séance du ' + formatDateFR(selectedDate);
+    container.appendChild(addLabel);
+
+    const addRow = document.createElement('div');
+    addRow.style.display = 'flex';
+    addRow.style.gap = '8px';
+    addRow.style.flexWrap = 'wrap';
+    const voieInput = document.createElement('input');
+    voieInput.type = 'number';
+    voieInput.min = '1';
+    voieInput.placeholder = 'N° voie';
+    voieInput.style.width = '90px';
+    const diffInput = document.createElement('input');
+    diffInput.type = 'text';
+    diffInput.placeholder = 'Difficulté (ex. 5a)';
+    diffInput.style.width = '150px';
+    const heightInput = document.createElement('input');
+    heightInput.type = 'number';
+    heightInput.min = '0';
+    heightInput.step = '0.5';
+    heightInput.placeholder = 'Hauteur (m)';
+    heightInput.style.width = '110px';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn';
+    addBtn.type = 'button';
+    addBtn.textContent = 'Ajouter';
+    addBtn.addEventListener('click', () => {
+      const voie = voieInput.value.trim();
+      const diff = diffInput.value.trim();
+      const hauteur = parseFloat(heightInput.value);
+      if (!voie && !diff && isNaN(hauteur)) return;
+      addClimbEntry(climbClass, selectedDate, st.id, { voie: voie || '?', difficulte: diff || '—', hauteur: isNaN(hauteur) ? 0 : hauteur });
+      renderClimbRoster();
+    });
+    addRow.appendChild(voieInput);
+    addRow.appendChild(diffInput);
+    addRow.appendChild(heightInput);
+    addRow.appendChild(addBtn);
+    container.appendChild(addRow);
+
+    const tot = sessionClimbTotals(climbClass, selectedDate, st.id);
+    const totalLine = document.createElement('div');
+    totalLine.style.marginTop = '10px';
+    totalLine.style.fontSize = '0.85rem';
+    totalLine.style.color = 'var(--ink-soft)';
+    totalLine.textContent = 'Total séance : ' + tot.routes + ' voie' + (tot.routes !== 1 ? 's' : '') + ' · ' + fmtNum(tot.meters) + ' m';
+    container.appendChild(totalLine);
+  }
+
+  function renderClimbRecap() {
+    climbRecapClassLabel.textContent = climbClass;
+    const list = students(climbClass);
+    const byDate = db.climbing[climbClass] || {};
+    const dates = Object.keys(byDate).sort();
+
+    if (dates.length === 0 || list.length === 0) {
+      climbRecapContent.innerHTML = '<div class="roster-empty">Aucune séance d\'escalade enregistrée pour cette classe pour le moment.</div>';
+      climbRecapDetail.innerHTML = '';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'recap-table';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>Élève</th><th class="num" style="text-align:center;">Voies (total)</th><th class="num" style="text-align:center;">Mètres (total)</th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    list.forEach(st => {
+      const tot = studentClimbTotals(climbClass, st.id);
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      if (st.id === climbRecapSelectedStudent) tr.style.background = 'var(--gold-soft)';
+      tr.innerHTML = '<td>' + escapeHtml(st.name) + '</td><td class="num">' + tot.routes + '</td><td class="num">' + fmtNum(tot.meters) + '</td>';
+      tr.addEventListener('click', () => {
+        climbRecapSelectedStudent = (climbRecapSelectedStudent === st.id) ? null : st.id;
+        renderClimbRecap();
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    climbRecapContent.innerHTML = '';
+    climbRecapContent.appendChild(table);
+
+    const note = document.createElement('div');
+    note.className = 'recap-note';
+    note.textContent = dates.length + ' séance' + (dates.length > 1 ? 's' : '') + ' enregistrée' + (dates.length > 1 ? 's' : '') +
+      ' : ' + dates.map(formatDateFR).join(', ');
+    climbRecapContent.appendChild(note);
+
+    renderClimbRecapDetail(list, byDate, dates);
+  }
+
+  function renderClimbRecapDetail(list, byDate, dates) {
+    climbRecapDetail.innerHTML = '';
+    if (!climbRecapSelectedStudent) return;
+    const st = list.find(s => s.id === climbRecapSelectedStudent);
+    if (!st) { climbRecapSelectedStudent = null; return; }
+
+    const box = document.createElement('div');
+    box.style.marginTop = '16px';
+    box.style.borderTop = '1px solid var(--line)';
+    box.style.paddingTop = '14px';
+
+    const headRow = document.createElement('div');
+    headRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
+    const h3 = document.createElement('div');
+    h3.style.cssText = "font-family:'Oswald', sans-serif;font-weight:600;font-size:0.95rem;";
+    h3.textContent = 'Détail — ' + st.name;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn ghost';
+    closeBtn.type = 'button';
+    closeBtn.textContent = 'Fermer';
+    closeBtn.addEventListener('click', () => { climbRecapSelectedStudent = null; renderClimbRecap(); });
+    headRow.appendChild(h3);
+    headRow.appendChild(closeBtn);
+    box.appendChild(headRow);
+
+    let any = false;
+    dates.forEach(date => {
+      const entries = byDate[date][st.id];
+      if (!entries || entries.length === 0) return;
+      any = true;
+      const dateTitle = document.createElement('div');
+      dateTitle.style.cssText = 'font-weight:600;font-size:0.85rem;margin:10px 0 6px;';
+      dateTitle.textContent = formatDateFR(date);
+      box.appendChild(dateTitle);
+      const list2 = document.createElement('div');
+      list2.className = 'roster';
+      entries.forEach(e => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.padding = '6px 10px';
+        const info = document.createElement('div');
+        info.className = 'name';
+        info.style.fontWeight = '400';
+        info.style.fontSize = '0.85rem';
+        info.textContent = 'Voie n°' + e.voie + '  ·  ' + e.difficulte + '  ·  ' + fmtNum(e.hauteur) + ' m';
+        row.appendChild(info);
+        list2.appendChild(row);
+      });
+      box.appendChild(list2);
+    });
+
+    if (!any) {
+      const empty = document.createElement('div');
+      empty.className = 'roster-empty';
+      empty.textContent = 'Aucune voie enregistrée pour cet élève.';
+      box.appendChild(empty);
+    } else {
+      const tot = studentClimbTotals(climbClass, st.id);
+      const totalLine = document.createElement('div');
+      totalLine.style.cssText = 'margin-top:14px;padding-top:12px;border-top:2px solid var(--gold);font-weight:700;';
+      totalLine.textContent = 'Total cumulé : ' + tot.routes + ' voie' + (tot.routes !== 1 ? 's' : '') + ' · ' + fmtNum(tot.meters) + ' m';
+      box.appendChild(totalLine);
+    }
+
+    climbRecapDetail.appendChild(box);
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ---------- Trail ----------
+  classSelectTrail.addEventListener('change', () => {
+    trailClass = classSelectTrail.value;
+    trailExpandedStudent = null;
+    trailRecapSelectedStudent = null;
+    renderTrailRoster();
+    renderTrailRanking();
+    if (trailRecapVisible) renderTrailRecap();
+  });
+
+  trailDateInput.addEventListener('change', () => {
+    selectedDate = trailDateInput.value || todayStr();
+    trailExpandedStudent = null;
+    renderTrailRoster();
+    renderTrailRanking();
+  });
+
+  toggleTrailRecapBtn.addEventListener('click', () => {
+    trailRecapVisible = !trailRecapVisible;
+    trailRecapWrap.style.display = trailRecapVisible ? 'block' : 'none';
+    toggleTrailRecapBtn.textContent = trailRecapVisible ? '📊 Masquer le récap' : '📊 Voir le récap';
+    if (trailRecapVisible) renderTrailRecap();
+  });
+
+  // Le trail ne concerne que la classe BTSA2.
+  function renderTrailClassOptions() {
+    ensureClasses();
+    const avail = classNames().includes('BTSA2') ? ['BTSA2'] : sortedClassNames();
+    trailClass = avail[0] || null;
+    fillClassSelect(classSelectTrail, trailClass, avail);
+    trailDateInput.value = selectedDate;
+    renderTrailRoster();
+    renderTrailRanking();
+    if (trailRecapVisible) renderTrailRecap();
+  }
+
+  function renderTrailRanking() {
+    trailRanking.innerHTML = '';
+    const rows = trailRankingForDate(trailClass, selectedDate);
+    trailSummaryRow.innerHTML = '';
+    trailSummaryRow.appendChild(makeSummaryChip(rows.length + ' résultat' + (rows.length !== 1 ? 's' : '') + ' (séance)', rows.length > 0 ? 'amberc' : ''));
+    if (rows.length === 0) return;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:16px;';
+    const title = document.createElement('div');
+    title.style.cssText = "font-family:'Oswald', sans-serif; font-weight:600; font-size:0.92rem; margin-bottom:8px;";
+    title.textContent = '🏆 Classement — ' + formatDateFR(selectedDate);
+    wrap.appendChild(title);
+
+    const table = document.createElement('table');
+    table.className = 'recap-table';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>#</th><th>Élève</th><th class="num" style="text-align:center;">Sexe</th><th class="num" style="text-align:center;">Distance</th><th class="num" style="text-align:center;">D+</th><th class="num" style="text-align:center;">D-</th><th class="num" style="text-align:center;">Temps</th><th class="num" style="text-align:center;">Allure</th><th class="num" style="text-align:center;">Note /20</th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td class="num rank-num">' + (i + 1) + '</td>' +
+        '<td>' + escapeHtml(r.student.name) + '</td>' +
+        '<td class="num">' + (r.student.sexe || '—') + '</td>' +
+        '<td class="num">' + fmtNum(r.entry.distance) + ' km</td>' +
+        '<td class="num">' + fmtNum(r.entry.denivele) + ' m</td>' +
+        '<td class="num">' + fmtNum(r.entry.deniveleNeg || 0) + ' m</td>' +
+        '<td class="num">' + formatTemps(r.entry.tempsSec) + '</td>' +
+        '<td class="num" style="font-weight:700;color:var(--tatami-dark);">' + formatPace(r.pace) + '</td>' +
+        '<td class="num" style="font-weight:700;color:var(--gold);">' + formatNote20(trailPerformanceNote(r.entry, r.student.sexe)) + '</td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    const note = document.createElement('div');
+    note.className = 'recap-note';
+    note.textContent = 'Note /20 calculée à partir du temps de référence (distance + dénivelé, méthode inspirée de la grille officielle Randonnée sportive de l\'enseignement agricole), avec un barème distinct filles/garçons comme sur les grilles CCF — cliquez G/F à côté d\'un nom pour le renseigner. Le temps de référence correspond à une performance moyenne (~14/20), 20/20 demande d\'être nettement plus rapide.';
+    wrap.appendChild(note);
+    trailRanking.appendChild(wrap);
+  }
+
+  function renderTrailRoster() {
+    const list = students(trailClass);
+    trailRoster.innerHTML = '';
+    if (list.length === 0) {
+      trailRosterEmpty.style.display = 'block';
+      return;
+    }
+    trailRosterEmpty.style.display = 'none';
+
+    list.forEach(st => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.flexDirection = 'column';
+      row.style.alignItems = 'stretch';
+
+      const headRow = document.createElement('div');
+      headRow.style.display = 'flex';
+      headRow.style.justifyContent = 'space-between';
+      headRow.style.alignItems = 'center';
+      headRow.style.width = '100%';
+      headRow.style.cursor = 'pointer';
+
+      const nameWrap = document.createElement('div');
+      nameWrap.style.display = 'flex';
+      nameWrap.style.alignItems = 'center';
+      nameWrap.style.gap = '8px';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = st.name;
+      nameWrap.appendChild(nameEl);
+
+      const sexeWrap = document.createElement('div');
+      sexeWrap.style.display = 'flex';
+      sexeWrap.style.gap = '4px';
+      ['G', 'F'].forEach(sx => {
+        const sxBtn = document.createElement('button');
+        sxBtn.type = 'button';
+        sxBtn.className = 'chip-toggle' + (st.sexe === sx ? ' on' : '');
+        if (st.sexe === sx) { sxBtn.style.background = 'var(--tatami)'; sxBtn.style.borderColor = 'var(--tatami)'; sxBtn.style.color = '#fff'; }
+        sxBtn.textContent = sx;
+        sxBtn.title = sx === 'G' ? 'Garçon' : 'Fille';
+        sxBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setStudentSexe(trailClass, st.id, sx);
+          renderTrailRoster();
+          renderTrailRanking();
+        });
+        sexeWrap.appendChild(sxBtn);
+      });
+      nameWrap.appendChild(sexeWrap);
+      headRow.appendChild(nameWrap);
+
+      const best = bestTrailEntry(trailClass, selectedDate, st.id);
+      const badgeWrap = document.createElement('div');
+      badgeWrap.style.display = 'flex';
+      badgeWrap.style.alignItems = 'center';
+      badgeWrap.style.gap = '8px';
+      const badge = document.createElement('span');
+      badge.className = 'summary-chip' + (best ? ' amberc' : '');
+      badge.textContent = best ? (fmtNum(best.distance) + ' km · ' + formatTemps(best.tempsSec) + ' · ' + formatPace(tracePace(best)) + ' · ' + formatNote20(trailPerformanceNote(best, st.sexe))) : 'Aucun résultat';
+      badgeWrap.appendChild(badge);
+      const chevron = document.createElement('span');
+      chevron.textContent = (trailExpandedStudent === st.id) ? '▲' : '▼';
+      chevron.style.color = 'var(--ink-soft)';
+      chevron.style.fontSize = '0.8rem';
+      badgeWrap.appendChild(chevron);
+      headRow.appendChild(badgeWrap);
+
+      headRow.addEventListener('click', () => {
+        trailExpandedStudent = (trailExpandedStudent === st.id) ? null : st.id;
+        renderTrailRoster();
+      });
+      row.appendChild(headRow);
+
+      if (trailExpandedStudent === st.id) {
+        const formWrap = document.createElement('div');
+        formWrap.style.width = '100%';
+        formWrap.style.marginTop = '14px';
+        formWrap.style.paddingTop = '14px';
+        formWrap.style.borderTop = '1px solid var(--line)';
+        row.appendChild(formWrap);
+        renderTrailEntryForm(formWrap, st);
+      }
+
+      trailRoster.appendChild(row);
+    });
+  }
+
+  function renderTrailEntryForm(container, st) {
+    container.innerHTML = '';
+    const byClass = db.trail[trailClass] || {};
+    const allDates = Object.keys(byClass)
+      .filter(d => (byClass[d][st.id] || []).length > 0)
+      .sort()
+      .reverse();
+
+    if (allDates.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'roster-empty';
+      empty.textContent = 'Aucun résultat enregistré pour le moment.';
+      container.appendChild(empty);
+    } else {
+      allDates.forEach(date => {
+        const entries = trailEntries(trailClass, date, st.id);
+        const isCurrent = date === selectedDate;
+        const dateTitle = document.createElement('div');
+        dateTitle.style.cssText = 'font-weight:600;font-size:0.82rem;margin:10px 0 6px;' + (isCurrent ? 'color:var(--tatami-dark);' : 'color:var(--ink-soft);');
+        dateTitle.textContent = formatDateFR(date) + (isCurrent ? ' (séance en cours)' : '');
+        container.appendChild(dateTitle);
+
+        const list = document.createElement('div');
+        list.className = 'roster';
+        list.style.marginBottom = '10px';
+        entries.forEach((e, idx) => {
+          const row = document.createElement('div');
+          row.className = 'row';
+          const info = document.createElement('div');
+          info.className = 'name';
+          info.style.flex = '1 1 auto';
+          info.textContent = fmtNum(e.distance) + ' km · ' + fmtNum(e.denivele) + ' m D+ · ' + fmtNum(e.deniveleNeg || 0) + ' m D- · ' + formatTemps(e.tempsSec) + '  ·  allure ' + formatPace(tracePace(e)) + '  ·  ' + formatNote20(trailPerformanceNote(e, st.sexe));
+          row.appendChild(info);
+          const delBtn = document.createElement('button');
+          delBtn.className = 'del-btn';
+          delBtn.type = 'button';
+          delBtn.textContent = '✕';
+          delBtn.setAttribute('aria-label', 'Supprimer ce résultat');
+          delBtn.addEventListener('click', () => {
+            deleteTrailEntry(trailClass, date, st.id, idx);
+            renderTrailRoster();
+            renderTrailRanking();
+          });
+          row.appendChild(delBtn);
+          list.appendChild(row);
+        });
+        container.appendChild(list);
+      });
+    }
+
+    const addLabel = document.createElement('div');
+    addLabel.style.cssText = 'font-size:0.8rem;color:var(--ink-soft);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:12px;';
+    addLabel.textContent = 'Ajouter un résultat — séance du ' + formatDateFR(selectedDate);
+    container.appendChild(addLabel);
+
+    const addRow = document.createElement('div');
+    addRow.style.display = 'flex';
+    addRow.style.gap = '8px';
+    addRow.style.flexWrap = 'wrap';
+    addRow.style.alignItems = 'center';
+
+    const distInput = document.createElement('input');
+    distInput.type = 'number';
+    distInput.min = '0';
+    distInput.step = '0.1';
+    distInput.placeholder = 'Distance (km)';
+    distInput.style.width = '120px';
+
+    const denivInput = document.createElement('input');
+    denivInput.type = 'number';
+    denivInput.min = '0';
+    denivInput.step = '1';
+    denivInput.placeholder = 'D+ (m)';
+    denivInput.style.width = '100px';
+
+    const denivNegInput = document.createElement('input');
+    denivNegInput.type = 'number';
+    denivNegInput.min = '0';
+    denivNegInput.step = '1';
+    denivNegInput.placeholder = 'D- (m)';
+    denivNegInput.style.width = '100px';
+
+    const hInput = document.createElement('input');
+    hInput.type = 'number';
+    hInput.min = '0';
+    hInput.placeholder = 'h';
+    hInput.style.width = '60px';
+
+    const minInput = document.createElement('input');
+    minInput.type = 'number';
+    minInput.min = '0';
+    minInput.max = '59';
+    minInput.placeholder = 'min';
+    minInput.style.width = '70px';
+
+    const secInput = document.createElement('input');
+    secInput.type = 'number';
+    secInput.min = '0';
+    secInput.max = '59';
+    secInput.placeholder = 'sec';
+    secInput.style.width = '70px';
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn';
+    addBtn.type = 'button';
+    addBtn.textContent = 'Ajouter';
+    addBtn.addEventListener('click', () => {
+      const distance = parseFloat(distInput.value);
+      const denivele = parseFloat(denivInput.value);
+      const deniveleNeg = parseFloat(denivNegInput.value);
+      const h = parseInt(hInput.value, 10) || 0;
+      const min = parseInt(minInput.value, 10) || 0;
+      const sec = parseInt(secInput.value, 10) || 0;
+      const tempsSec = h * 3600 + min * 60 + sec;
+      if (!distance || distance <= 0 || tempsSec <= 0) {
+        statusLineFlash(container, 'Indiquez au moins une distance et un temps.');
+        return;
+      }
+      addTrailEntry(trailClass, selectedDate, st.id, {
+        distance: distance, denivele: isNaN(denivele) ? 0 : denivele,
+        deniveleNeg: isNaN(deniveleNeg) ? 0 : deniveleNeg, tempsSec: tempsSec
+      });
+      renderTrailRoster();
+      renderTrailRanking();
+    });
+
+    addRow.appendChild(distInput);
+    addRow.appendChild(denivInput);
+    addRow.appendChild(denivNegInput);
+    addRow.appendChild(hInput);
+    const sep1 = document.createElement('span');
+    sep1.textContent = ':';
+    sep1.style.color = 'var(--ink-soft)';
+    addRow.appendChild(sep1);
+    addRow.appendChild(minInput);
+    const sep2 = document.createElement('span');
+    sep2.textContent = ':';
+    sep2.style.color = 'var(--ink-soft)';
+    addRow.appendChild(sep2);
+    addRow.appendChild(secInput);
+    addRow.appendChild(addBtn);
+    container.appendChild(addRow);
+
+    const best = bestTrailEntry(trailClass, selectedDate, st.id);
+    const totalLine = document.createElement('div');
+    totalLine.style.marginTop = '10px';
+    totalLine.style.fontSize = '0.85rem';
+    totalLine.style.color = 'var(--ink-soft)';
+    totalLine.textContent = best
+      ? ('Meilleur résultat de la séance : ' + fmtNum(best.distance) + ' km · ' + formatTemps(best.tempsSec) + ' · allure ' + formatPace(tracePace(best)) + ' · note ' + formatNote20(trailPerformanceNote(best, st.sexe)))
+      : 'Aucun résultat pour cette séance.';
+    container.appendChild(totalLine);
+  }
+
+  function statusLineFlash(container, msg) {
+    let el = container.querySelector('.status-msg');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'status-msg';
+      container.appendChild(el);
+    }
+    el.textContent = msg;
+    setTimeout(() => { if (el) el.textContent = ''; }, 2500);
+  }
+
+  function renderTrailRecap() {
+    trailRecapClassLabel.textContent = trailClass;
+    const list = students(trailClass);
+    const byDate = db.trail[trailClass] || {};
+    const dates = Object.keys(byDate).sort();
+
+    if (dates.length === 0 || list.length === 0) {
+      trailRecapContent.innerHTML = '<div class="roster-empty">Aucune sortie trail enregistrée pour cette classe pour le moment.</div>';
+      trailRecapDetail.innerHTML = '';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'recap-table';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>Élève</th><th class="num" style="text-align:center;">Meilleure allure</th><th class="num" style="text-align:center;">Meilleure note</th><th class="num" style="text-align:center;">Sorties</th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    list.forEach(st => {
+      const best = studentBestTrailEntry(trailClass, st.id);
+      let sorties = 0;
+      dates.forEach(d => { if (byDate[d][st.id] && byDate[d][st.id].length) sorties++; });
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      if (st.id === trailRecapSelectedStudent) tr.style.background = 'var(--gold-soft)';
+      tr.innerHTML = '<td>' + escapeHtml(st.name) + '</td><td class="num">' + (best ? formatPace(tracePace(best.entry)) : '—') + '</td><td class="num">' + (best ? formatNote20(trailPerformanceNote(best.entry, st.sexe)) : '—') + '</td><td class="num">' + sorties + '</td>';
+      tr.addEventListener('click', () => {
+        trailRecapSelectedStudent = (trailRecapSelectedStudent === st.id) ? null : st.id;
+        renderTrailRecap();
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    trailRecapContent.innerHTML = '';
+    trailRecapContent.appendChild(table);
+
+    const note = document.createElement('div');
+    note.className = 'recap-note';
+    note.textContent = dates.length + ' séance' + (dates.length > 1 ? 's' : '') + ' enregistrée' + (dates.length > 1 ? 's' : '') +
+      ' : ' + dates.map(formatDateFR).join(', ');
+    trailRecapContent.appendChild(note);
+
+    renderTrailRecapDetail(list, byDate, dates);
+  }
+
+  function renderTrailRecapDetail(list, byDate, dates) {
+    trailRecapDetail.innerHTML = '';
+    if (!trailRecapSelectedStudent) return;
+    const st = list.find(s => s.id === trailRecapSelectedStudent);
+    if (!st) { trailRecapSelectedStudent = null; return; }
+
+    const box = document.createElement('div');
+    box.style.marginTop = '16px';
+    box.style.borderTop = '1px solid var(--line)';
+    box.style.paddingTop = '14px';
+
+    const headRow = document.createElement('div');
+    headRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
+    const h3 = document.createElement('div');
+    h3.style.cssText = "font-family:'Oswald', sans-serif;font-weight:600;font-size:0.95rem;";
+    h3.textContent = 'Détail — ' + st.name;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn ghost';
+    closeBtn.type = 'button';
+    closeBtn.textContent = 'Fermer';
+    closeBtn.addEventListener('click', () => { trailRecapSelectedStudent = null; renderTrailRecap(); });
+    headRow.appendChild(h3);
+    headRow.appendChild(closeBtn);
+    box.appendChild(headRow);
+
+    let any = false;
+    dates.forEach(date => {
+      const entries = byDate[date][st.id];
+      if (!entries || entries.length === 0) return;
+      any = true;
+      const dateTitle = document.createElement('div');
+      dateTitle.style.cssText = 'font-weight:600;font-size:0.85rem;margin:10px 0 6px;';
+      dateTitle.textContent = formatDateFR(date);
+      box.appendChild(dateTitle);
+      const list2 = document.createElement('div');
+      list2.className = 'roster';
+      entries.forEach(e => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.padding = '6px 10px';
+        const info = document.createElement('div');
+        info.className = 'name';
+        info.style.fontWeight = '400';
+        info.style.fontSize = '0.85rem';
+        info.textContent = fmtNum(e.distance) + ' km · ' + fmtNum(e.denivele) + ' m D+ · ' + fmtNum(e.deniveleNeg || 0) + ' m D- · ' + formatTemps(e.tempsSec) + ' · allure ' + formatPace(tracePace(e)) + ' · ' + formatNote20(trailPerformanceNote(e, st.sexe));
+        row.appendChild(info);
+        list2.appendChild(row);
+      });
+      box.appendChild(list2);
+    });
+
+    if (!any) {
+      const empty = document.createElement('div');
+      empty.className = 'roster-empty';
+      empty.textContent = 'Aucun résultat enregistré pour cet élève.';
+      box.appendChild(empty);
+    } else {
+      const best = studentBestTrailEntry(trailClass, st.id);
+      const totalLine = document.createElement('div');
+      totalLine.style.cssText = 'margin-top:14px;padding-top:12px;border-top:2px solid var(--gold);font-weight:700;';
+      totalLine.textContent = 'Meilleure allure : ' + (best ? formatPace(tracePace(best.entry)) + ' · ' + formatNote20(trailPerformanceNote(best.entry, st.sexe)) + ' (' + formatDateFR(best.date) + ')' : '—');
+      box.appendChild(totalLine);
+    }
+
+    trailRecapDetail.appendChild(box);
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ---------- Cross-device sync (db capability) ----------
+  let sb = null, sbUser = null, remoteRev = 0, remoteBusy = false, remoteQueued = false;
+  let remoteAvailable = false;
+  let remoteWriteTimer = null;
+
+  function setSyncStatus(mode) {
+    if (mode === 'synced') syncStatusEl.textContent = '☁️ Synchronisé sur vos appareils';
+    else if (mode === 'local') syncStatusEl.textContent = '💻 Enregistré sur cet appareil';
+    else if (mode === 'syncing') syncStatusEl.textContent = '⏳ Synchronisation…';
+    else syncStatusEl.textContent = '';
+  }
+
+  function countStudents(d) {
+    return Object.keys(d.classes || {}).reduce((n, c) => n + ((d.classes[c] || []).length), 0);
+  }
+  function payload() {
+    return { classes: db.classes, attendance: db.attendance, climbing: db.climbing, trail: db.trail, version: db.version, updatedAt: db.updatedAt };
+  }
+  function scheduleRemoteWrite() {
+    if (!remoteAvailable) return;
+    setSyncStatus('syncing');
+    clearTimeout(remoteWriteTimer);
+    remoteWriteTimer = setTimeout(pushRemote, 900);
+  }
+  async function pushRemote() {
+    if (!sb || !sbUser) return;
+    if (remoteBusy) { remoteQueued = true; return; }
+    if (countStudents(db) === 0) { setSyncStatus('local'); return; } // jamais écraser avec du vide
+    remoteBusy = true;
+    try {
+      const newRev = Date.now();
+      let ok = false;
+      if (remoteRev === 0) {
+        const r = await sb.from('eps_state').insert({ user_id: sbUser.id, data: payload(), rev: newRev });
+        if (!r.error) ok = true; else if (r.error.code !== '23505') throw r.error;
+      } else {
+        const r = await sb.from('eps_state').update({ data: payload(), rev: newRev, updated_at: new Date().toISOString() }).eq('user_id', sbUser.id).eq('rev', remoteRev).select('rev');
+        if (r.error) throw r.error;
+        ok = !!(r.data && r.data.length === 1);
+      }
+      if (ok) { remoteRev = newRev; setSyncStatus('synced'); maybeSnapshot(false); }
+      else { await pullRemote(); remoteQueued = true; } // conflit : on fusionne puis on renvoie
+    } catch (e) { setSyncStatus('local'); }
+    remoteBusy = false;
+    if (remoteQueued) { remoteQueued = false; scheduleRemoteWrite(); }
+  }
+  async function maybeSnapshot(force) {
+    try {
+      const last = +localStorage.getItem('eps-last-snap') || 0;
+      if (!force && Date.now() - last < 6 * 3600 * 1000) return;
+      if (countStudents(db) === 0) return;
+      const r = await sb.from('eps_backups').insert({ data: payload() });
+      if (r.error) return;
+      localStorage.setItem('eps-last-snap', String(Date.now()));
+      await sb.from('eps_backups').delete().lt('created_at', new Date(Date.now() - 45 * 86400000).toISOString());
+    } catch (e) {}
+  }
+  // Récupère la copie serveur : l'adopte si plus récente, sinon la fusionne
+  // sans rien écraser. Retourne true si la copie locale a été remplacée.
+  async function pullRemote() {
+    const r = await sb.from('eps_state').select('data,rev').eq('user_id', sbUser.id).maybeSingle();
+    if (r.error) throw r.error;
+    if (!r.data) { remoteRev = 0; return false; }
+    const rd = r.data.data || {};
+    remoteRev = r.data.rev;
+    const remoteTime = rd.updatedAt || 0;
+    const localTime = db.updatedAt || 0;
+    const localClasses = db.classes;
+    let replaced = false;
+    if (rd.classes && (countStudents(db) === 0 || (!localDirty && remoteTime > localTime))) {
+      const localAtt = db.attendance, localClimb = db.climbing, localTrail = db.trail;
+      db = { classes: rd.classes, attendance: rd.attendance || {}, climbing: rd.climbing || {}, trail: rd.trail || {}, version: rd.version || 0, updatedAt: remoteTime };
+      mergeMissingEvals(db.classes, localClasses);
+      fillMissing(db.attendance, localAtt); fillMissing(db.climbing, localClimb); fillMissing(db.trail, localTrail);
+      replaced = true;
+    } else if (rd.classes) {
+      mergeMissingEvals(db.classes, rd.classes);
+      fillMissing(db.attendance, rd.attendance || {}); fillMissing(db.climbing, rd.climbing || {}); fillMissing(db.trail, rd.trail || {});
+    }
+    return replaced;
+  }
+
+  // Complète (sans jamais écraser) les évaluations d'une copie avec celles de
+  // l'autre copie, élève par élève (classe + nom) : aucun choix/note perdu.
+  function fillMissing(target, source) {
+    Object.keys(source || {}).forEach(k => {
+      const sv = source[k];
+      if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
+        if (target[k] == null || typeof target[k] !== 'object') target[k] = {};
+        fillMissing(target[k], sv);
+      } else if (target[k] == null && sv != null) {
+        target[k] = sv;
+      }
+    });
+  }
+  function mergeMissingEvals(targetClasses, sourceClasses) {
+    try {
+      Object.keys(sourceClasses || {}).forEach(cn => {
+        const tl = targetClasses[cn];
+        if (!tl) return;
+        (sourceClasses[cn] || []).forEach(ss => {
+          const ts = tl.find(x => x.name === ss.name);
+          if (!ts) return;
+          if (ss.eval) { if (!ts.eval) ts.eval = {}; fillMissing(ts.eval, ss.eval); }
+          if (ss.rankHistory) { if (!ts.rankHistory) ts.rankHistory = {}; fillMissing(ts.rankHistory, ss.rankHistory); }
+          if (ss.levels && ss.levels.badminton != null) { if (!ts.levels) ts.levels = {}; if (ts.levels.badminton == null) ts.levels.badminton = ss.levels.badminton; }
+        });
+      });
+    } catch (e) {}
+  }
+
+  async function onLogin(user) {
+    sbUser = user;
+    document.getElementById('loginOverlay').style.display = 'none';
+    try {
+      const replaced = await pullRemote();
+      remoteAvailable = true;
+      ensureSchema();
+      saveDB(true);
+      if (replaced) { homeClass = null; teamClass = null; evalClass = null; }
+      ensureClasses();
+      renderHome();
+      if (activeTab === 'equipe') renderTeamClassOptions();
+      if (activeTab === 'evaluation') renderEvalClassOptions();
+      if (activeTab === 'escalade') renderClimbClassOptions();
+      if (activeTab === 'trail') renderTrailClassOptions();
+    } catch (e) { setSyncStatus('local'); }
+  }
+
+  async function bootAuth() {
+    const cfg = window.EPS_CONFIG || {};
+    const overlay = document.getElementById('loginOverlay');
+    const msg = document.getElementById('loginMsg');
+    if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) {
+      overlay.style.display = 'none';
+      setSyncStatus('local');
+      syncStatusEl.textContent = '💻 Mode local — base de données non reliée (voir config.js)';
+      return;
+    }
+    sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+    document.getElementById('loginForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      msg.textContent = 'Connexion…';
+      const r = await sb.auth.signInWithPassword({ email: document.getElementById('loginEmail').value.trim(), password: document.getElementById('loginPassword').value });
+      if (r.error) { msg.textContent = 'Connexion refusée : ' + r.error.message; return; }
+      msg.textContent = '';
+      document.getElementById('loginPassword').value = '';
+      await onLogin(r.data.user);
+    });
+    const ses = await sb.auth.getSession();
+    if (ses.data && ses.data.session) await onLogin(ses.data.session.user);
+    else overlay.style.display = 'flex';
+  }
+
+  // ---------- Sauvegardes ----------
+  document.getElementById('backupBtn').addEventListener('click', () => {
+    const panel = document.getElementById('backupPanel');
+    if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    panel.innerHTML = '';
+    const keys = listBackups().sort().reverse();
+    const cur = describeBackup(JSON.stringify(db));
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:0.85rem;margin-bottom:8px;';
+    h.textContent = 'Actuellement : ' + cur.txt;
+    panel.appendChild(h);
+    if (!keys.length) { panel.appendChild(document.createTextNode('Aucune sauvegarde locale sur cet appareil.')); }
+    keys.forEach(k => {
+      const raw = localStorage.getItem(k); if (!raw) return;
+      const d = describeBackup(raw);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;font-size:0.82rem;';
+      const t = document.createElement('span');
+      t.textContent = d.when + ' — ' + d.txt;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'sport-btn'; b.style.cssText = 'flex:none;font-size:0.8rem;padding:6px 10px;';
+      b.textContent = 'Restaurer';
+      let armed = false;
+      b.addEventListener('click', () => {
+        if (!armed) { armed = true; b.textContent = 'Confirmer ?'; return; }
+        try {
+          rollBackup(JSON.stringify(db));
+          const nd = JSON.parse(raw);
+          if (!nd.classes) return;
+          db = nd; if (!db.attendance) db.attendance = {}; if (!db.climbing) db.climbing = {}; if (!db.trail) db.trail = {};
+          ensureSchema(); saveDB();
+          homeClass = null; teamClass = null; evalClass = null; ensureClasses(); renderHome();
+          panel.style.display = 'none';
+        } catch (e) {}
+      });
+      row.appendChild(t); row.appendChild(b); panel.appendChild(row);
+    });
+  });
+
+  document.getElementById('backupBtn').addEventListener('click', () => {
+    const panel = document.getElementById('backupPanel');
+    if (panel.style.display !== 'block') return;
+    const box = document.createElement('div');
+    box.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:0.85rem;';
+    const mk = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sport-btn'; b.style.cssText = 'flex:none;font-size:0.8rem;padding:6px 10px;margin:0 6px 6px 0;'; b.textContent = label; b.addEventListener('click', fn); box.appendChild(b); return b; };
+    const refresh = () => { panel.style.display = 'none'; homeClass = null; teamClass = null; evalClass = null; ensureClasses(); renderHome(); };
+    const applyData = (nd) => {
+      rollBackup(JSON.stringify(db));
+      db = { classes: nd.classes, attendance: nd.attendance || {}, climbing: nd.climbing || {}, trail: nd.trail || {}, version: nd.version || 0, updatedAt: Date.now() };
+      ensureSchema(); saveDB(); refresh();
+    };
+    mk('⬇️ Exporter un fichier', () => {
+      const blob = new Blob([JSON.stringify(payload())], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'sauvegarde-eps-' + todayStr() + '.json'; a.click();
+    });
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json'; inp.style.display = 'none';
+    inp.addEventListener('change', () => {
+      const f = inp.files[0]; if (!f) return;
+      f.text().then(t => { const nd = JSON.parse(t); if (nd && nd.classes) applyData(nd); }).catch(() => {});
+    });
+    box.appendChild(inp);
+    mk('⬆️ Importer un fichier', () => inp.click());
+    if (sb && sbUser) {
+      mk('Se déconnecter', async () => { await sb.auth.signOut(); location.reload(); });
+      const title = document.createElement('div'); title.style.cssText = 'margin:8px 0 6px;font-weight:600;'; title.textContent = 'Sauvegardes du serveur (toutes les 6 h)'; box.appendChild(title);
+      sb.from('eps_backups').select('id,created_at,data').order('created_at', { ascending: false }).limit(12).then(r => {
+        (r.data || []).forEach(row => {
+          const d = describeBackup(JSON.stringify(row.data));
+          const line = document.createElement('div');
+          line.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;';
+          const t = document.createElement('span'); t.textContent = new Date(row.created_at).toLocaleString('fr-FR') + ' — ' + d.txt;
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'sport-btn'; b.style.cssText = 'flex:none;font-size:0.8rem;padding:6px 10px;'; b.textContent = 'Restaurer';
+          let armed = false;
+          b.addEventListener('click', () => { if (!armed) { armed = true; b.textContent = 'Confirmer ?'; return; } applyData(row.data); });
+          line.appendChild(t); line.appendChild(b); box.appendChild(line);
+        });
+      });
+    }
+    panel.appendChild(box);
+  });
+
+  // ---------- Init ----------
+  loadDB();
+  ensureSchema();
+  ensureClasses();
+  ensureBtsa1Class();
+  ensureBtsa2Class();
+  saveDB(true);
+  renderHome();
+  setMode('hetero');
+  bootAuth();
+})();
+</script>
+</body>
+</html>
