@@ -3793,7 +3793,7 @@
     const box = document.createElement('div');
     box.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:0.85rem;';
     const mk = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sport-btn'; b.style.cssText = 'flex:none;font-size:0.8rem;padding:6px 10px;margin:0 6px 6px 0;'; b.textContent = label; b.addEventListener('click', fn); box.appendChild(b); return b; };
-    const refresh = () => { panel.style.display = 'none'; homeClass = null; teamClass = null; evalClass = null; ensureClasses(); renderHome(); };
+    const refresh = () => { homeClass = null; teamClass = null; evalClass = null; ensureClasses(); renderHome(); };
     const applyData = (nd) => {
       rollBackup(JSON.stringify(db));
       db = { classes: nd.classes, attendance: nd.attendance || {}, climbing: nd.climbing || {}, trail: nd.trail || {}, version: nd.version || 0, updatedAt: Date.now() };
@@ -3804,11 +3804,28 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = 'sauvegarde-eps-' + todayStr() + '.json'; a.click();
     });
-    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json'; inp.style.display = 'none';
+    const note = document.createElement('div'); note.style.cssText = 'margin:6px 0;font-weight:600;';
+    const say = (m, bad) => { note.textContent = m; note.style.color = bad ? '#a33' : '#2f6b4f'; };
+    const inp = document.createElement('input'); inp.type = 'file'; inp.style.display = 'none';
     inp.addEventListener('change', () => {
       const f = inp.files[0]; if (!f) return;
-      f.text().then(t => { const nd = JSON.parse(t); if (nd && nd.classes) applyData(nd); }).catch(() => {});
+      say('Lecture de ' + f.name + '…');
+      const rd = new FileReader();
+      rd.onerror = () => say('Impossible de lire ce fichier.', true);
+      rd.onload = () => {
+        try {
+          let txt = String(rd.result || '').replace(/^﻿/, '');
+          let nd = JSON.parse(txt);
+          if (nd && !nd.classes && nd.data && nd.data.classes) nd = nd.data;
+          if (!nd || !nd.classes || typeof nd.classes !== 'object') { say('Ce fichier ne contient pas de classes : ce nest pas une sauvegarde EPS.', true); return; }
+          const n = countStudents(nd);
+          applyData(nd);
+          say('Importé : ' + Object.keys(nd.classes).length + ' classes, ' + n + ' élèves.');
+        } catch (e) { say('Fichier illisible : ' + e.message, true); }
+      };
+      rd.readAsText(f);
     });
+    box.appendChild(note);
     box.appendChild(inp);
     mk('⬆️ Importer un fichier', () => inp.click());
     if (sb && sbUser) {
