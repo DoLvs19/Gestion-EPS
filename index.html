@@ -962,6 +962,8 @@
   let recapSelectedStudent = null;
   let localDirty = false; // true as soon as the user edits something locally
   let selectedDate = todayStr();
+  let climbDate = todayStr();
+  let trailDate = todayStr();
 
   function todayStr() {
     const d = new Date();
@@ -1307,6 +1309,32 @@
       if (best) rows.push({ student: st, entry: best, pace: tracePace(best) });
     });
     rows.sort((a, b) => a.pace - b.pace);
+    return rows;
+  }
+
+  // Meilleure sortie d'un élève, toutes séances confondues, selon la note /20.
+  function studentBestByNote(className, st) {
+    const byDate = (db.trail && db.trail[className]) || {};
+    let best = null;
+    Object.keys(byDate).forEach(date => {
+      (byDate[date][st.id] || []).forEach(e => {
+        const p = tracePace(e);
+        if (p == null) return;
+        const n = trailPerformanceNote(e, st.sexe);
+        const score = n == null ? -1 : n;
+        if (!best || score > best.score || (score === best.score && p < best.pace)) best = { entry: e, date: date, score: score, pace: p };
+      });
+    });
+    return best;
+  }
+  // Classement général : un élève par ligne (sa meilleure note), tous trails confondus.
+  function trailRankingAll(className) {
+    const rows = [];
+    students(className).forEach(st => {
+      const b = studentBestByNote(className, st);
+      if (b) rows.push({ student: st, entry: b.entry, date: b.date, pace: b.pace, score: b.score });
+    });
+    rows.sort((x, y) => (y.score - x.score) || (x.pace - y.pace));
     return rows;
   }
 
@@ -2841,7 +2869,7 @@
   });
 
   climbDateInput.addEventListener('change', () => {
-    selectedDate = climbDateInput.value || todayStr();
+    climbDate = climbDateInput.value || todayStr();
     climbExpandedStudent = null;
     renderClimbRoster();
   });
@@ -2857,9 +2885,10 @@
   function renderClimbClassOptions() {
     ensureClasses();
     const avail = classNames().includes('BTSA1') ? ['BTSA1'] : sortedClassNames();
+    climbDate = todayStr();
     climbClass = avail[0] || null;
     fillClassSelect(classSelectClimb, climbClass, avail);
-    climbDateInput.value = selectedDate;
+    climbDateInput.value = climbDate;
     renderClimbRoster();
     if (climbRecapVisible) renderClimbRecap();
   }
@@ -2876,13 +2905,15 @@
 
     let totalRoutesSession = 0, totalMetersSession = 0;
     list.forEach(st => {
-      const tot = sessionClimbTotals(climbClass, selectedDate, st.id);
+      const tot = sessionClimbTotals(climbClass, climbDate, st.id);
       totalRoutesSession += tot.routes;
       totalMetersSession += tot.meters;
     });
     climbSummaryRow.innerHTML = '';
-    climbSummaryRow.appendChild(makeSummaryChip(totalRoutesSession + ' voie' + (totalRoutesSession !== 1 ? 's' : '') + ' (séance)', totalRoutesSession > 0 ? 'amberc' : ''));
-    climbSummaryRow.appendChild(makeSummaryChip(fmtNum(totalMetersSession) + ' m réalisés (séance)', totalMetersSession > 0 ? 'amberc' : ''));
+    let allRoutes = 0, allMeters = 0;
+    list.forEach(st => { const t = studentClimbTotals(climbClass, st.id); allRoutes += t.routes; allMeters += t.meters; });
+    climbSummaryRow.appendChild(makeSummaryChip(allRoutes + ' voie' + (allRoutes !== 1 ? 's' : '') + ' au total · ' + fmtNum(allMeters) + ' m', allRoutes > 0 ? 'amberc' : ''));
+    climbSummaryRow.appendChild(makeSummaryChip('Aujourd\'hui : ' + totalRoutesSession + ' voie' + (totalRoutesSession !== 1 ? 's' : '') + ' · ' + fmtNum(totalMetersSession) + ' m', totalRoutesSession > 0 ? 'amberc' : ''));
 
     list.forEach(st => {
       const row = document.createElement('div');
@@ -2902,14 +2933,15 @@
       nameEl.textContent = st.name;
       headRow.appendChild(nameEl);
 
-      const tot = sessionClimbTotals(climbClass, selectedDate, st.id);
+      const tot = studentClimbTotals(climbClass, st.id);
+      const todayTot = sessionClimbTotals(climbClass, climbDate, st.id);
       const badgeWrap = document.createElement('div');
       badgeWrap.style.display = 'flex';
       badgeWrap.style.alignItems = 'center';
       badgeWrap.style.gap = '8px';
       const badge = document.createElement('span');
       badge.className = 'summary-chip' + (tot.routes > 0 ? ' amberc' : '');
-      badge.textContent = tot.routes + ' voie' + (tot.routes !== 1 ? 's' : '') + ' · ' + fmtNum(tot.meters) + ' m';
+      badge.textContent = tot.routes + ' voie' + (tot.routes !== 1 ? 's' : '') + ' · ' + fmtNum(tot.meters) + ' m' + (todayTot.routes > 0 ? '  (+' + todayTot.routes + ' auj.)' : '');
       badgeWrap.appendChild(badge);
       const chevron = document.createElement('span');
       chevron.textContent = (climbExpandedStudent === st.id) ? '▲' : '▼';
@@ -2954,7 +2986,7 @@
     } else {
       allDates.forEach(date => {
         const entries = climbEntries(climbClass, date, st.id);
-        const isCurrent = date === selectedDate;
+        const isCurrent = date === climbDate;
         const dateTitle = document.createElement('div');
         dateTitle.style.cssText = 'font-weight:600;font-size:0.82rem;margin:10px 0 6px;' + (isCurrent ? 'color:var(--tatami-dark);' : 'color:var(--ink-soft);');
         dateTitle.textContent = formatDateFR(date) + (isCurrent ? ' (séance en cours)' : '');
@@ -2989,7 +3021,7 @@
 
     const addLabel = document.createElement('div');
     addLabel.style.cssText = 'font-size:0.8rem;color:var(--ink-soft);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:12px;';
-    addLabel.textContent = 'Ajouter une voie — séance du ' + formatDateFR(selectedDate);
+    addLabel.textContent = 'Ajouter une voie — séance du ' + formatDateFR(climbDate);
     container.appendChild(addLabel);
 
     const addRow = document.createElement('div');
@@ -3020,7 +3052,7 @@
       const diff = diffInput.value.trim();
       const hauteur = parseFloat(heightInput.value);
       if (!voie && !diff && isNaN(hauteur)) return;
-      addClimbEntry(climbClass, selectedDate, st.id, { voie: voie || '?', difficulte: diff || '—', hauteur: isNaN(hauteur) ? 0 : hauteur });
+      addClimbEntry(climbClass, climbDate, st.id, { voie: voie || '?', difficulte: diff || '—', hauteur: isNaN(hauteur) ? 0 : hauteur });
       renderClimbRoster();
     });
     addRow.appendChild(voieInput);
@@ -3029,7 +3061,7 @@
     addRow.appendChild(addBtn);
     container.appendChild(addRow);
 
-    const tot = sessionClimbTotals(climbClass, selectedDate, st.id);
+    const tot = sessionClimbTotals(climbClass, climbDate, st.id);
     const totalLine = document.createElement('div');
     totalLine.style.marginTop = '10px';
     totalLine.style.fontSize = '0.85rem';
@@ -3160,7 +3192,7 @@
   });
 
   trailDateInput.addEventListener('change', () => {
-    selectedDate = trailDateInput.value || todayStr();
+    trailDate = trailDateInput.value || todayStr();
     trailExpandedStudent = null;
     renderTrailRoster();
     renderTrailRanking();
@@ -3177,9 +3209,10 @@
   function renderTrailClassOptions() {
     ensureClasses();
     const avail = classNames().includes('BTSA2') ? ['BTSA2'] : sortedClassNames();
+    trailDate = todayStr();
     trailClass = avail[0] || null;
     fillClassSelect(classSelectTrail, trailClass, avail);
-    trailDateInput.value = selectedDate;
+    trailDateInput.value = trailDate;
     renderTrailRoster();
     renderTrailRanking();
     if (trailRecapVisible) renderTrailRecap();
@@ -3187,28 +3220,29 @@
 
   function renderTrailRanking() {
     trailRanking.innerHTML = '';
-    const rows = trailRankingForDate(trailClass, selectedDate);
+    const rows = trailRankingAll(trailClass);
     trailSummaryRow.innerHTML = '';
-    trailSummaryRow.appendChild(makeSummaryChip(rows.length + ' résultat' + (rows.length !== 1 ? 's' : '') + ' (séance)', rows.length > 0 ? 'amberc' : ''));
+    trailSummaryRow.appendChild(makeSummaryChip(rows.length + ' résultat' + (rows.length !== 1 ? 's' : '') + ' (toutes séances)', rows.length > 0 ? 'amberc' : ''));
     if (rows.length === 0) return;
 
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:16px;';
     const title = document.createElement('div');
     title.style.cssText = "font-family:'Oswald', sans-serif; font-weight:600; font-size:0.92rem; margin-bottom:8px;";
-    title.textContent = '🏆 Classement — ' + formatDateFR(selectedDate);
+    title.textContent = '🏆 Classement général — meilleure note de chaque élève';
     wrap.appendChild(title);
 
     const table = document.createElement('table');
     table.className = 'recap-table';
     const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>#</th><th>Élève</th><th class="num" style="text-align:center;">Sexe</th><th class="num" style="text-align:center;">Distance</th><th class="num" style="text-align:center;">D+</th><th class="num" style="text-align:center;">D-</th><th class="num" style="text-align:center;">Temps</th><th class="num" style="text-align:center;">Allure</th><th class="num" style="text-align:center;">Note /20</th></tr>';
+    thead.innerHTML = '<tr><th>#</th><th>Élève</th><th class="num" style="text-align:center;">Date</th><th class="num" style="text-align:center;">Sexe</th><th class="num" style="text-align:center;">Distance</th><th class="num" style="text-align:center;">D+</th><th class="num" style="text-align:center;">D-</th><th class="num" style="text-align:center;">Temps</th><th class="num" style="text-align:center;">Allure</th><th class="num" style="text-align:center;">Note /20</th></tr>';
     table.appendChild(thead);
     const tbody = document.createElement('tbody');
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
       tr.innerHTML = '<td class="num rank-num">' + (i + 1) + '</td>' +
         '<td>' + escapeHtml(r.student.name) + '</td>' +
+        '<td class="num">' + formatDateFR(r.date) + '</td>' +
         '<td class="num">' + (r.student.sexe || '—') + '</td>' +
         '<td class="num">' + fmtNum(r.entry.distance) + ' km</td>' +
         '<td class="num">' + fmtNum(r.entry.denivele) + ' m</td>' +
@@ -3279,7 +3313,8 @@
       nameWrap.appendChild(sexeWrap);
       headRow.appendChild(nameWrap);
 
-      const best = bestTrailEntry(trailClass, selectedDate, st.id);
+      const bestAll = studentBestByNote(trailClass, st);
+      const best = bestAll ? bestAll.entry : null;
       const badgeWrap = document.createElement('div');
       badgeWrap.style.display = 'flex';
       badgeWrap.style.alignItems = 'center';
@@ -3331,7 +3366,7 @@
     } else {
       allDates.forEach(date => {
         const entries = trailEntries(trailClass, date, st.id);
-        const isCurrent = date === selectedDate;
+        const isCurrent = date === trailDate;
         const dateTitle = document.createElement('div');
         dateTitle.style.cssText = 'font-weight:600;font-size:0.82rem;margin:10px 0 6px;' + (isCurrent ? 'color:var(--tatami-dark);' : 'color:var(--ink-soft);');
         dateTitle.textContent = formatDateFR(date) + (isCurrent ? ' (séance en cours)' : '');
@@ -3367,7 +3402,7 @@
 
     const addLabel = document.createElement('div');
     addLabel.style.cssText = 'font-size:0.8rem;color:var(--ink-soft);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:12px;';
-    addLabel.textContent = 'Ajouter un résultat — séance du ' + formatDateFR(selectedDate);
+    addLabel.textContent = 'Ajouter un résultat — séance du ' + formatDateFR(trailDate);
     container.appendChild(addLabel);
 
     const addRow = document.createElement('div');
@@ -3433,7 +3468,7 @@
         statusLineFlash(container, 'Indiquez au moins une distance et un temps.');
         return;
       }
-      addTrailEntry(trailClass, selectedDate, st.id, {
+      addTrailEntry(trailClass, trailDate, st.id, {
         distance: distance, denivele: isNaN(denivele) ? 0 : denivele,
         deniveleNeg: isNaN(deniveleNeg) ? 0 : deniveleNeg, tempsSec: tempsSec
       });
@@ -3458,7 +3493,7 @@
     addRow.appendChild(addBtn);
     container.appendChild(addRow);
 
-    const best = bestTrailEntry(trailClass, selectedDate, st.id);
+    const best = bestTrailEntry(trailClass, trailDate, st.id);
     const totalLine = document.createElement('div');
     totalLine.style.marginTop = '10px';
     totalLine.style.fontSize = '0.85rem';
