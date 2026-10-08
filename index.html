@@ -90,7 +90,31 @@
     margin: 0;
   }
   .subtitle { color: #D9E6DE; font-size: 0.9rem; margin-top: 4px; }
-  .sync-status { font-size: 0.78rem; color: #D9E6DE; white-space: nowrap; }
+  .sync-status { font-size: 0.85rem; color: #D9E6DE; white-space: nowrap; padding: 3px 10px; border-radius: 999px; }
+  .sync-status.ok { color: #c9f5d6; font-weight: 700; }
+  .sync-status.warn { color: #3a2b00; background: #ffe08a; font-weight: 700; }
+  .sync-status.bad { color: #fff; background: #b3261e; font-weight: 700; }
+  .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #undoBtn { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: .85rem; }
+  #undoBtn:disabled { opacity: .35; cursor: default; }
+  #backupBanner { display: none; background: #fff3cd; color: #4a3a00; border-bottom: 1px solid #e6cf7a; padding: 10px 16px; font-size: .9rem; text-align: center; }
+  #backupBanner button { margin-left: 8px; padding: 5px 12px; border-radius: 8px; border: 1px solid #b08900; background: #fff; cursor: pointer; }
+  #alertBox { margin: 10px 0; }
+  .alert-line { background: #fdecea; color: #7a1b14; border: 1px solid #f3b8b3; border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; font-size: .85rem; }
+  .alert-other { font-size: .8rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .route-chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; margin: 0 6px 6px 0; cursor: pointer; font-size: .82rem; }
+  .route-chip:hover { background: var(--gold-soft); }
+  #ficheModal { display: none; position: fixed; inset: 0; z-index: 9000; background: #fff; overflow: auto; padding: 16px; }
+  #ficheModal .fiche { max-width: 820px; margin: 0 auto; }
+  #ficheModal h2 { font-family: 'Oswald', sans-serif; margin: 0 0 2px; }
+  #ficheModal h3 { font-family: 'Oswald', sans-serif; margin: 18px 0 6px; font-size: 1rem; border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+  #ficheModal table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  #ficheModal td, #ficheModal th { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+  @media print {
+    body.fiche-open > *:not(#ficheModal) { display: none !important; }
+    #ficheModal { position: static; overflow: visible; padding: 0; }
+    #ficheModal .no-print { display: none !important; }
+  }
 
   nav.tabs {
     background: var(--chalk-card);
@@ -380,9 +404,11 @@
       <h1>Outil EPS</h1>
       <div class="subtitle">Assiduité, équipes et évaluation</div>
     </div>
-    <span id="syncStatus" class="sync-status" title="État de la synchronisation">⏳ Connexion…</span>
+    <div class="top-actions"><button id="undoBtn" type="button" disabled title="Annuler la dernière modification">↩️ Annuler</button><span id="syncStatus" class="sync-status" title="État de la synchronisation">⏳ Connexion…</span></div>
   </div>
 </header>
+<div id="backupBanner"></div>
+<div id="ficheModal"><div class="fiche" id="ficheContent"></div></div>
 
 <nav class="tabs">
   <div class="tabs-inner">
@@ -1127,11 +1153,37 @@
     return changed;
   }
 
+  let undoStack = [], lastSavedJson = null, lastUndoPush = 0;
+  function updateUndoBtn() { const b = document.getElementById('undoBtn'); if (b) b.disabled = undoStack.length === 0; }
   function saveDB(isSystemSave) {
     if (!isSystemSave) { localDirty = true; db.updatedAt = Date.now(); }
-    try { localStorage.setItem(STORAGE_PREFIX, JSON.stringify(db)); } catch (e) {}
+    let json = null;
+    try { json = JSON.stringify(db); } catch (e) {}
+    if (!isSystemSave && lastSavedJson && json && json !== lastSavedJson) {
+      const now = Date.now();
+      if (now - lastUndoPush > 800) { undoStack.push(lastSavedJson); if (undoStack.length > 15) undoStack.shift(); }
+      lastUndoPush = now;
+      updateUndoBtn();
+    }
+    if (json) lastSavedJson = json;
+    try { localStorage.setItem(STORAGE_PREFIX, json); } catch (e) {}
     scheduleRemoteWrite();
   }
+  function doUndo() {
+    if (!undoStack.length) return;
+    try {
+      const prev = JSON.parse(undoStack.pop());
+      db = prev;
+      if (!db.classes) db.classes = {}; if (!db.attendance) db.attendance = {}; if (!db.climbing) db.climbing = {}; if (!db.trail) db.trail = {};
+      db.updatedAt = Date.now(); localDirty = true;
+      saveDB(true);
+      if (!db.classes[homeClass]) homeClass = null;
+      ensureClasses();
+      switchTab(activeTab);
+    } catch (e) {}
+    updateUndoBtn();
+  }
+  document.getElementById('undoBtn').addEventListener('click', doUndo);
 
   function ensureClasses() {
     if (Object.keys(db.classes).length === 0) db.classes['Ma classe'] = [];
@@ -1340,7 +1392,9 @@
 
   function getAtt(className, date, studentId) {
     const rec = db.attendance && db.attendance[className] && db.attendance[className][date] && db.attendance[className][date][studentId];
-    return rec || { absent: false, dispense: false, oubliTenue: false };
+    if (rec) return rec;
+    const stu = students(className).find(x => x.id === studentId);
+    return { absent: false, dispense: !!(stu && stu.dispenseLongue), oubliTenue: false };
   }
 
   // Cumulative totals for one student, across every date recorded for THIS
@@ -1349,8 +1403,7 @@
     const attByClass = (db.attendance && db.attendance[className]) || {};
     let a = 0, d = 0, o = 0;
     Object.keys(attByClass).forEach(date => {
-      const rec = attByClass[date][studentId];
-      if (!rec) return;
+      const rec = getAtt(className, date, studentId);
       if (rec.absent) a++;
       if (rec.dispense) d++;
       if (rec.oubliTenue) o++;
@@ -1361,7 +1414,7 @@
   function setAtt(className, date, studentId, field, value) {
     db.attendance[className] = db.attendance[className] || {};
     db.attendance[className][date] = db.attendance[className][date] || {};
-    const existing = db.attendance[className][date][studentId] || { absent: false, dispense: false, oubliTenue: false };
+    const existing = db.attendance[className][date][studentId] || Object.assign({}, getAtt(className, date, studentId));
     existing[field] = value;
     db.attendance[className][date][studentId] = existing;
     saveDB();
@@ -1420,6 +1473,8 @@
     updateTeamDateLabel();
   });
 
+  const ALERT_OUBLI = 3, ALERT_ABS = 3; // seuils d'alerte (élèves à surveiller)
+
   function renderHome() {
     ensureClasses();
     if (!homeClass || !db.classes[homeClass]) homeClass = sortedClassNames()[0];
@@ -1459,6 +1514,7 @@
           if (totals.d > 0) parts.push('💊 ' + totals.d);
           if (totals.o > 0) parts.push('👕 ' + totals.o);
           totalsEl.textContent = parts.join('  ·  ');
+          if (totals.a >= ALERT_ABS || totals.o >= ALERT_OUBLI) { totalsEl.style.color = '#b3261e'; totalsEl.style.fontWeight = '700'; totalsEl.textContent = '⚠️ ' + totalsEl.textContent; }
           nameWrap.appendChild(totalsEl);
         }
 
@@ -1475,7 +1531,19 @@
         chips.appendChild(makeChip('👕 Oubli tenue', att.oubliTenue, () => {
           setAtt(homeClass, selectedDate, st.id, 'oubliTenue', !att.oubliTenue); renderHome();
         }, 'oubli'));
+        chips.appendChild(makeChip('♿ Longue durée', !!st.dispenseLongue, () => {
+          st.dispenseLongue = !st.dispenseLongue; saveDB(); renderHome();
+        }, 'dispense'));
         row.appendChild(chips);
+
+        const ficheBtn = document.createElement('button');
+        ficheBtn.className = 'del-btn';
+        ficheBtn.type = 'button';
+        ficheBtn.style.color = 'var(--tatami-dark)';
+        ficheBtn.title = 'Fiche élève (PDF)';
+        ficheBtn.textContent = '📄';
+        ficheBtn.addEventListener('click', () => openFiche(homeClass, st.id));
+        row.appendChild(ficheBtn);
 
         const delBtn = document.createElement('button');
         delBtn.className = 'del-btn';
@@ -1507,6 +1575,44 @@
     summaryRow.appendChild(makeSummaryChip(absentCount + ' absent' + (absentCount !== 1 ? 's' : ''), absentCount > 0 ? 'warn' : ''));
     summaryRow.appendChild(makeSummaryChip(dispenseCount + ' dispensé' + (dispenseCount !== 1 ? 's' : ''), dispenseCount > 0 ? 'amberc' : ''));
     summaryRow.appendChild(makeSummaryChip(oubliCount + ' oubli' + (oubliCount !== 1 ? 's' : '') + ' de tenue', ''));
+
+    // Appel rapide : tous présents sauf exceptions
+    const appelRec = (db.attendance[homeClass] && db.attendance[homeClass][selectedDate] && db.attendance[homeClass][selectedDate].__appel) || null;
+    if (list.length > 0) {
+      const appelBtn = document.createElement('button');
+      appelBtn.type = 'button';
+      appelBtn.className = 'btn';
+      appelBtn.style.marginLeft = '6px';
+      appelBtn.textContent = appelRec ? '✔ Appel validé à ' + hhmm(appelRec.at) + ' (rouvrir)' : '✅ Valider l\'appel (tous présents sauf exceptions)';
+      appelBtn.addEventListener('click', () => {
+        db.attendance[homeClass] = db.attendance[homeClass] || {};
+        const day = db.attendance[homeClass][selectedDate] = db.attendance[homeClass][selectedDate] || {};
+        if (appelRec) { delete day.__appel; }
+        else { list.forEach(st => { if (!day[st.id]) day[st.id] = Object.assign({}, getAtt(homeClass, selectedDate, st.id)); }); day.__appel = { done: true, at: Date.now() }; }
+        saveDB(); renderHome();
+      });
+      summaryRow.appendChild(appelBtn);
+    }
+
+    // Alertes : élèves à surveiller (toutes classes)
+    let alertBox = document.getElementById('alertBox');
+    if (!alertBox) { alertBox = document.createElement('div'); alertBox.id = 'alertBox'; summaryRow.insertAdjacentElement('afterend', alertBox); }
+    alertBox.innerHTML = '';
+    const others = [];
+    classNames().forEach(cn => {
+      const flagged = students(cn).map(x => ({ x: x, t: studentTotals(cn, x.id) })).filter(e => e.t.a >= ALERT_ABS || e.t.o >= ALERT_OUBLI);
+      if (cn === homeClass) {
+        flagged.forEach(e => {
+          const d = document.createElement('div'); d.className = 'alert-line';
+          const parts = [];
+          if (e.t.o >= ALERT_OUBLI) parts.push(e.t.o + ' oublis de tenue');
+          if (e.t.a >= ALERT_ABS) parts.push(e.t.a + ' absences');
+          d.textContent = '⚠️ ' + e.x.name + ' — ' + parts.join(' · ');
+          alertBox.appendChild(d);
+        });
+      } else if (flagged.length) others.push(cn + ' (' + flagged.length + ')');
+    });
+    if (others.length) { const o = document.createElement('div'); o.className = 'alert-other'; o.textContent = 'Autres classes avec élèves à surveiller : ' + others.join(', '); alertBox.appendChild(o); }
 
     deleteClassBtnHome.style.display = classNames().length > 1 ? 'inline-block' : 'none';
 
@@ -1600,8 +1706,7 @@
     list.forEach(st => {
       let a = 0, d = 0, o = 0;
       dates.forEach(date => {
-        const rec = attByClass[date][st.id];
-        if (!rec) return;
+        const rec = getAtt(homeClass, date, st.id);
         if (rec.absent) a++;
         if (rec.dispense) d++;
         if (rec.oubliTenue) o++;
@@ -1640,8 +1745,7 @@
     if (!st) { recapSelectedStudent = null; return; }
 
     const entries = dates
-      .filter(date => attByClass[date][st.id])
-      .map(date => ({ date: date, rec: attByClass[date][st.id] }))
+      .map(date => ({ date: date, rec: getAtt(homeClass, date, st.id) }))
       .filter(e => e.rec.absent || e.rec.dispense || e.rec.oubliTenue);
 
     const box = document.createElement('div');
@@ -3019,6 +3123,34 @@
       });
     }
 
+    // Voies déjà faites par la classe : on les touche pour les ajouter à la séance du jour
+    const freq = {};
+    Object.keys(byClass).forEach(d => Object.keys(byClass[d]).forEach(sid => (byClass[d][sid] || []).forEach(e => {
+      if (!e.voie || e.voie === '?') return;
+      const k = e.voie + '|' + e.difficulte + '|' + e.hauteur;
+      freq[k] = (freq[k] || 0) + 1;
+    })));
+    const popular = Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, 14);
+    if (popular.length) {
+      const pl = document.createElement('div');
+      pl.style.cssText = 'font-size:0.8rem;color:var(--ink-soft);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:12px;';
+      pl.textContent = 'Voies déjà faites (touchez pour ajouter à aujourd\'hui) :';
+      container.appendChild(pl);
+      const wrapR = document.createElement('div');
+      popular.forEach(k => {
+        const parts = k.split('|');
+        const chip = document.createElement('button');
+        chip.type = 'button'; chip.className = 'route-chip';
+        chip.textContent = 'n°' + parts[0] + ' · ' + parts[1] + ' · ' + fmtNum(parseFloat(parts[2]) || 0) + ' m';
+        chip.addEventListener('click', () => {
+          addClimbEntry(climbClass, climbDate, st.id, { voie: parts[0], difficulte: parts[1], hauteur: parseFloat(parts[2]) || 0 });
+          renderClimbRoster();
+        });
+        wrapR.appendChild(chip);
+      });
+      container.appendChild(wrapR);
+    }
+
     const addLabel = document.createElement('div');
     addLabel.style.cssText = 'font-size:0.8rem;color:var(--ink-soft);margin:14px 0 6px;border-top:1px solid var(--line);padding-top:12px;';
     addLabel.textContent = 'Ajouter une voie — séance du ' + formatDateFR(climbDate);
@@ -3633,12 +3765,18 @@
   let remoteAvailable = false;
   let remoteWriteTimer = null;
 
+  let lastSyncAt = 0, pendingSync = false;
+  function hhmm(ts) { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + 'h' + String(d.getMinutes()).padStart(2, '0'); }
   function setSyncStatus(mode) {
-    if (mode === 'synced') syncStatusEl.textContent = '☁️ Synchronisé sur vos appareils';
-    else if (mode === 'local') syncStatusEl.textContent = '💻 Enregistré sur cet appareil';
-    else if (mode === 'syncing') syncStatusEl.textContent = '⏳ Synchronisation…';
-    else syncStatusEl.textContent = '';
+    const el = syncStatusEl;
+    el.classList.remove('ok', 'warn', 'bad');
+    if (mode === 'synced') { lastSyncAt = Date.now(); pendingSync = false; el.textContent = '✅ Enregistré à ' + hhmm(lastSyncAt); el.classList.add('ok'); }
+    else if (mode === 'syncing') { pendingSync = true; el.textContent = '⏳ Envoi en cours…'; el.classList.add('warn'); }
+    else if (mode === 'error') { pendingSync = true; el.textContent = '⚠️ NON synchronisé — ne fermez pas la page'; el.classList.add('bad'); }
+    else if (mode === 'local') { el.textContent = '💻 Enregistré sur cet appareil seulement'; el.classList.add('warn'); }
+    else el.textContent = '';
   }
+  window.addEventListener('beforeunload', (e) => { if (pendingSync && remoteAvailable) { e.preventDefault(); e.returnValue = ''; } });
 
   function countStudents(d) {
     return Object.keys(d.classes || {}).reduce((n, c) => n + ((d.classes[c] || []).length), 0);
@@ -3670,7 +3808,7 @@
       }
       if (ok) { remoteRev = newRev; setSyncStatus('synced'); maybeSnapshot(false); }
       else { await pullRemote(); remoteQueued = true; } // conflit : on fusionne puis on renvoie
-    } catch (e) { setSyncStatus('local'); }
+    } catch (e) { setSyncStatus('error'); setTimeout(scheduleRemoteWrite, 15000); }
     remoteBusy = false;
     if (remoteQueued) { remoteQueued = false; scheduleRemoteWrite(); }
   }
@@ -3747,13 +3885,14 @@
       remoteAvailable = true;
       ensureSchema();
       saveDB(true);
-      if (replaced) { homeClass = null; teamClass = null; evalClass = null; }
+      if (replaced) { homeClass = null; teamClass = null; evalClass = null; undoStack = []; updateUndoBtn(); }
       ensureClasses();
       renderHome();
       if (activeTab === 'equipe') renderTeamClassOptions();
       if (activeTab === 'evaluation') renderEvalClassOptions();
       if (activeTab === 'escalade') renderClimbClassOptions();
       if (activeTab === 'trail') renderTrailClassOptions();
+      checkBackupBanner();
     } catch (e) { setSyncStatus('local'); }
   }
 
@@ -3765,6 +3904,7 @@
       overlay.style.display = 'none';
       setSyncStatus('local');
       syncStatusEl.textContent = '💻 Mode local — base de données non reliée (voir config.js)';
+      checkBackupBanner();
       return;
     }
     sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
@@ -3782,7 +3922,154 @@
     else overlay.style.display = 'flex';
   }
 
+  // ---------- Fiche élève + progression ----------
+  function sparkSVG(points, label) {
+    // points : [{x: 'jj/mm', y: nombre}] — courbe simple, sans dépendance
+    if (!points.length) return '';
+    const W = 560, H = 130, padL = 34, padR = 12, padT = 14, padB = 26;
+    const ys = points.map(p => p.y);
+    let lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys);
+    if (lo === hi) { lo -= 1; hi += 1; }
+    const X = i => padL + (points.length === 1 ? (W - padL - padR) / 2 : i * (W - padL - padR) / (points.length - 1));
+    const Y = v => padT + (hi - v) * (H - padT - padB) / (hi - lo);
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="max-width:560px;display:block;margin:6px 0;" role="img" aria-label="' + escapeHtml(label) + '">';
+    svg += '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + (W - padR) + '" y2="' + (H - padB) + '" stroke="#999"/>';
+    svg += '<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (H - padB) + '" stroke="#999"/>';
+    svg += '<text x="4" y="' + (padT + 4) + '" font-size="10" fill="#555">' + (Math.round(hi * 10) / 10) + '</text>';
+    svg += '<text x="4" y="' + (H - padB) + '" font-size="10" fill="#555">' + (Math.round(lo * 10) / 10) + '</text>';
+    if (points.length > 1) svg += '<polyline fill="none" stroke="#2f6b4f" stroke-width="2" points="' + points.map((p, i) => X(i) + ',' + Y(p.y)).join(' ') + '"/>';
+    points.forEach((p, i) => {
+      svg += '<circle cx="' + X(i) + '" cy="' + Y(p.y) + '" r="4" fill="#c8960c"/>';
+      svg += '<text x="' + X(i) + '" y="' + (Y(p.y) - 7) + '" font-size="10" text-anchor="middle" fill="#222">' + (Math.round(p.y * 10) / 10) + '</text>';
+      svg += '<text x="' + X(i) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="#555">' + escapeHtml(p.x) + '</text>';
+    });
+    return svg + '</svg>';
+  }
+
+  function evalTotalFor(st, sport, niveau) {
+    const def = EVAL_DEFS[sport] && EVAL_DEFS[sport].niveaux[niveau];
+    if (!def || !st.eval || !st.eval[sport] || !st.eval[sport][niveau]) return null;
+    try {
+      if (def.kind === 'aflp') return computeAflpTotal(st.eval[sport][niveau]);
+      if (def.kind === 'flat') return computeFlatTotal(st.eval[sport][niveau], def.config.criteres);
+      if (def.kind === 'badminton_college') return computeCollegeTotal(st);
+    } catch (e) {}
+    return null;
+  }
+
+  function openFiche(className, studentId) {
+    const st = students(className).find(x => x.id === studentId);
+    if (!st) return;
+    const modal = document.getElementById('ficheModal');
+    const box = document.getElementById('ficheContent');
+    const t = studentTotals(className, st.id);
+    let h = '<div class="no-print" style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px;">' +
+      '<button type="button" class="btn" id="fichePrint">🖨️ Imprimer / PDF</button><button type="button" class="btn ghost" id="ficheClose">Fermer</button></div>';
+    h += '<h2>' + escapeHtml(st.name) + '</h2><div style="color:#555;">Classe : ' + escapeHtml(className) + ' · fiche éditée le ' + formatDateFR(todayStr()) + '</div>';
+
+    // Assiduité
+    h += '<h3>Assiduité</h3><div>🚫 Absences : <b>' + t.a + '</b> · 💊 Dispenses : <b>' + t.d + '</b> · 👕 Oublis de tenue : <b>' + t.o + '</b>' + (st.dispenseLongue ? ' · ♿ dispense longue durée' : '') + '</div>';
+    const byDate = db.attendance[className] || {};
+    const rows = Object.keys(byDate).sort().map(d => ({ d: d, r: getAtt(className, d, st.id) })).filter(e => e.r.absent || e.r.dispense || e.r.oubliTenue);
+    if (rows.length) h += '<table style="margin-top:6px;"><tr><th>Date</th><th>Absent</th><th>Dispensé</th><th>Oubli de tenue</th></tr>' +
+      rows.map(e => '<tr><td>' + formatDateFR(e.d) + '</td><td>' + (e.r.absent ? '✔' : '') + '</td><td>' + (e.r.dispense ? '✔' : '') + '</td><td>' + (e.r.oubliTenue ? '✔' : '') + '</td></tr>').join('') + '</table>';
+
+    // Niveaux
+    h += '<h3>Niveaux</h3><table><tr><th>Sport</th><th>Niveau / classement</th></tr>' +
+      SPORTS.map(sp => '<tr><td>' + escapeHtml((EVAL_DEFS[sp] && EVAL_DEFS[sp].label) || (sp.charAt(0).toUpperCase() + sp.slice(1))) + '</td><td>' + (st.levels && st.levels[sp] != null ? st.levels[sp] : '—') + '</td></tr>').join('') + '</table>';
+    const rh = (st.rankHistory && st.rankHistory.badminton) || {};
+    const rhPts = Object.keys(rh).sort().filter(d => typeof rh[d] === 'number').map(d => ({ x: formatDateFR(d).slice(0, 5), y: rh[d] }));
+    if (rhPts.length > 1) h += '<div style="margin-top:8px;font-weight:600;">Progression — classement badminton</div>' + sparkSVG(rhPts, 'Progression du classement badminton');
+
+    // Évaluations
+    const evs = [];
+    Object.keys(EVAL_DEFS).forEach(sp => Object.keys(EVAL_DEFS[sp].niveaux).forEach(nv => {
+      const tot = evalTotalFor(st, sp, nv);
+      if (tot != null) evs.push({ lib: EVAL_DEFS[sp].label + ' — ' + EVAL_DEFS[sp].niveaux[nv].label, tot: tot });
+    }));
+    h += '<h3>Évaluations</h3>' + (evs.length ? '<table><tr><th>Évaluation</th><th>Note</th></tr>' + evs.map(e => '<tr><td>' + escapeHtml(e.lib) + '</td><td><b>' + String(Math.round(e.tot * 10) / 10).replace('.', ',') + ' / 20</b></td></tr>').join('') + '</table>' : '<div style="color:#777;">Aucune note enregistrée.</div>');
+
+    // Escalade
+    const cl = (db.climbing[className] || {});
+    const clDates = Object.keys(cl).filter(d => (cl[d][st.id] || []).length).sort();
+    if (clDates.length) {
+      const ct = studentClimbTotals(className, st.id);
+      h += '<h3>Escalade</h3><div><b>' + ct.routes + '</b> voies · <b>' + fmtNum(ct.meters) + ' m</b> au total</div><table style="margin-top:6px;"><tr><th>Date</th><th>Voies (n° · difficulté · hauteur)</th></tr>' +
+        clDates.map(d => '<tr><td>' + formatDateFR(d) + '</td><td>' + cl[d][st.id].map(e => 'n°' + escapeHtml(String(e.voie)) + ' · ' + escapeHtml(String(e.difficulte)) + ' · ' + fmtNum(e.hauteur || 0) + ' m').join(' ; ') + '</td></tr>').join('') + '</table>';
+    }
+
+    // Trail
+    const tr = (db.trail[className] || {});
+    const trDates = Object.keys(tr).filter(d => (tr[d][st.id] || []).length).sort();
+    if (trDates.length) {
+      const pts = [];
+      let trh = '<table style="margin-top:6px;"><tr><th>Date</th><th>Distance</th><th>D+</th><th>D-</th><th>Temps</th><th>Allure</th><th>Note</th></tr>';
+      trDates.forEach(d => tr[d][st.id].forEach(e => {
+        const n = trailPerformanceNote(e, st.sexe);
+        if (n != null) pts.push({ x: formatDateFR(d).slice(0, 5), y: n });
+        trh += '<tr><td>' + formatDateFR(d) + '</td><td>' + fmtNum(e.distance) + ' km</td><td>' + fmtNum(e.denivele || 0) + ' m</td><td>' + fmtNum(e.deniveleNeg || 0) + ' m</td><td>' + formatTemps(e.tempsSec) + '</td><td>' + formatPace(tracePace(e)) + '</td><td><b>' + formatNote20(n) + '</b></td></tr>';
+      }));
+      h += '<h3>Trail</h3>' + trh + '</table>';
+      if (pts.length > 1) h += '<div style="margin-top:8px;font-weight:600;">Progression — note trail /20</div>' + sparkSVG(pts, 'Progression de la note de trail');
+    }
+    h += '<div style="margin-top:20px;font-size:.75rem;color:#777;">Document confidentiel — données de suivi EPS.</div>';
+    box.innerHTML = h;
+    modal.style.display = 'block';
+    document.body.classList.add('fiche-open');
+    document.getElementById('ficheClose').addEventListener('click', () => { modal.style.display = 'none'; document.body.classList.remove('fiche-open'); });
+    document.getElementById('fichePrint').addEventListener('click', () => window.print());
+  }
+
+  // ---------- Export CSV (Excel) ----------
+  function csvCell(v) {
+    if (v == null) return '';
+    v = String(v);
+    return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function exportCSV() {
+    const evCols = [];
+    Object.keys(EVAL_DEFS).forEach(sp => Object.keys(EVAL_DEFS[sp].niveaux).forEach(nv => evCols.push({ sp: sp, nv: nv, lib: 'Note ' + EVAL_DEFS[sp].label + ' ' + EVAL_DEFS[sp].niveaux[nv].label })));
+    const head = ['Classe', 'Élève', 'Sexe', 'Absences', 'Dispenses', 'Oublis tenue'].concat(SPORTS.map(sp => 'Niveau ' + ((EVAL_DEFS[sp] && EVAL_DEFS[sp].label) || (sp.charAt(0).toUpperCase() + sp.slice(1))))).concat(evCols.map(c => c.lib)).concat(['Escalade voies', 'Escalade mètres', 'Trail meilleure note /20', 'Trail meilleur temps']);
+    const lines = [head.map(csvCell).join(';')];
+    sortedClassNames().forEach(cn => students(cn).forEach(st => {
+      const t = studentTotals(cn, st.id);
+      const ct = studentClimbTotals(cn, st.id);
+      const best = studentBestByNote(cn, st);
+      const row = [cn, st.name, st.sexe || '', t.a, t.d, t.o]
+        .concat(SPORTS.map(sp => (st.levels && st.levels[sp] != null) ? st.levels[sp] : ''))
+        .concat(evCols.map(c => { const v = evalTotalFor(st, c.sp, c.nv); return v == null ? '' : String(Math.round(v * 10) / 10).replace('.', ','); }))
+        .concat([ct.routes || '', ct.meters ? String(ct.meters).replace('.', ',') : '', best && best.score >= 0 ? String(Math.round(best.score * 10) / 10).replace('.', ',') : '', best ? formatTemps(best.entry.tempsSec) : '']);
+      lines.push(row.map(csvCell).join(';'));
+    }));
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'bilan-eps-' + todayStr() + '.csv'; a.click();
+  }
+
   // ---------- Sauvegardes ----------
+  function exportFile() {
+    const blob = new Blob([JSON.stringify(payload())], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'sauvegarde-eps-' + todayStr() + '.json'; a.click();
+    try { localStorage.setItem('eps-last-export', String(Date.now())); } catch (e) {}
+    checkBackupBanner();
+  }
+  function checkBackupBanner() {
+    const bar = document.getElementById('backupBanner');
+    if (!bar) return;
+    let last = 0, snooze = 0;
+    try { last = +localStorage.getItem('eps-last-export') || 0; snooze = +localStorage.getItem('eps-banner-snooze') || 0; } catch (e) {}
+    const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+    if (countStudents(db) === 0 || (last && days < 7) || Date.now() < snooze) { bar.style.display = 'none'; return; }
+    bar.innerHTML = '';
+    bar.appendChild(document.createTextNode('💾 ' + (last ? 'Dernière sauvegarde en fichier il y a ' + days + ' jours.' : 'Aucune sauvegarde en fichier pour le moment.') + ' '));
+    const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = 'Exporter maintenant'; b1.addEventListener('click', exportFile);
+    const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = 'Plus tard';
+    b2.addEventListener('click', () => { try { localStorage.setItem('eps-banner-snooze', String(Date.now() + 86400000)); } catch (e) {} bar.style.display = 'none'; });
+    bar.appendChild(b1); bar.appendChild(b2);
+    bar.style.display = 'block';
+  }
+
   document.getElementById('backupBtn').addEventListener('click', () => {
     const panel = document.getElementById('backupPanel');
     if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
@@ -3832,13 +4119,10 @@
     const applyData = (nd) => {
       rollBackup(JSON.stringify(db));
       db = { classes: nd.classes, attendance: nd.attendance || {}, climbing: nd.climbing || {}, trail: nd.trail || {}, version: nd.version || 0, updatedAt: Date.now() };
-      ensureSchema(); saveDB(); refresh();
+      ensureSchema(); saveDB(); refresh(); checkBackupBanner();
     };
-    mk('⬇️ Exporter un fichier', () => {
-      const blob = new Blob([JSON.stringify(payload())], { type: 'application/json' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = 'sauvegarde-eps-' + todayStr() + '.json'; a.click();
-    });
+    mk('⬇️ Exporter une sauvegarde (fichier)', () => exportFile());
+    mk('📊 Exporter les notes (Excel/CSV)', () => exportCSV());
     const note = document.createElement('div'); note.style.cssText = 'margin:6px 0;font-weight:600;';
     const say = (m, bad) => { note.textContent = m; note.style.color = bad ? '#a33' : '#2f6b4f'; };
     const inp = document.createElement('input'); inp.type = 'file'; inp.style.display = 'none';
