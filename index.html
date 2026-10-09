@@ -99,6 +99,19 @@
   #undoBtn:disabled { opacity: .35; cursor: default; }
   #backupBanner { display: none; background: #fff3cd; color: #4a3a00; border-bottom: 1px solid #e6cf7a; padding: 10px 16px; font-size: .9rem; text-align: center; }
   #backupBanner button { margin-left: 8px; padding: 5px 12px; border-radius: 8px; border: 1px solid #b08900; background: #fff; cursor: pointer; }
+  .dd { position: relative; display: inline-block; flex: 0 1 auto; margin: 4px 0; }
+  .dd-btn { padding: 9px 14px; min-width: 150px; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; font-size: .95rem; color: var(--ink); display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+  .dd-btn:hover { background: var(--gold-soft); }
+  .dd-menu { display: none; position: absolute; left: 0; top: calc(100% + 4px); z-index: 60; min-width: 100%; max-height: 50vh; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); padding: 4px; }
+  .dd.open .dd-menu { display: block; }
+  .dd-item { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 0; background: none; cursor: pointer; border-radius: 8px; font-size: .95rem; color: var(--ink); white-space: nowrap; }
+  .dd-item:hover { background: var(--gold-soft); }
+  .dd-item.on { background: var(--tatami); color: #fff; font-weight: 600; }
+  .dd-lvl .dd-btn { min-width: 0; padding: 6px 10px; font-size: .86rem; }
+  .pill-select { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 100%; margin: 4px 0; }
+  .pill { padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; cursor: pointer; font-size: .9rem; color: var(--ink); }
+  .pill:hover { background: var(--gold-soft); }
+  .pill.on { background: var(--tatami); color: #fff; border-color: var(--tatami); font-weight: 600; }
   #alertBox { margin: 10px 0; }
   .alert-line { background: #fdecea; color: #7a1b14; border: 1px solid #f3b8b3; border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; font-size: .85rem; }
   .alert-other { font-size: .8rem; color: var(--ink-soft); margin-bottom: 6px; }
@@ -1464,6 +1477,64 @@
       if (name === selected) opt.selected = true;
       selectEl.appendChild(opt);
     });
+    syncPills(selectEl);
+  }
+
+  // Liste déroulante maison (le menu natif du navigateur ne s'ouvrait pas).
+  function makeDropdown(options, getValue, onPick, extraClass) {
+    const box = document.createElement('div');
+    box.className = 'dd' + (extraClass ? ' ' + extraClass : '');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dd-btn';
+    const lab = document.createElement('span');
+    const arrow = document.createElement('span');
+    arrow.textContent = '▾';
+    btn.appendChild(lab); btn.appendChild(arrow);
+    const menu = document.createElement('div');
+    menu.className = 'dd-menu';
+    box.appendChild(btn); box.appendChild(menu);
+    const paint = () => {
+      const cur = getValue();
+      const o = options.find(x => String(x.value) === String(cur));
+      lab.textContent = o ? o.label : '—';
+      Array.from(menu.children).forEach((it, i) => it.classList.toggle('on', String(options[i].value) === String(cur)));
+    };
+    options.forEach(o => {
+      const it = document.createElement('button');
+      it.type = 'button';
+      it.className = 'dd-item';
+      it.textContent = o.label;
+      it.addEventListener('click', (e) => {
+        e.stopPropagation();
+        box.classList.remove('open');
+        onPick(o.value);
+        if (box.isConnected) paint();
+      });
+      menu.appendChild(it);
+    });
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = box.classList.contains('open');
+      document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open'));
+      if (!wasOpen) box.classList.add('open');
+    });
+    paint();
+    return box;
+  }
+  document.addEventListener('click', () => document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open')));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open')); });
+
+  // Remplace chaque <select> de classe par la liste maison.
+  function syncPills(sel) {
+    let old = sel.nextElementSibling && sel.nextElementSibling.classList.contains('dd') ? sel.nextElementSibling : null;
+    if (old) old.remove();
+    sel.style.display = 'none';
+    const options = Array.from(sel.options).map(o => ({ value: o.value, label: o.textContent }));
+    const dd = makeDropdown(options, () => sel.value, (v) => {
+      if (sel.value !== v) { sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+    sel.insertAdjacentElement('afterend', dd);
   }
 
   // ---------- Accueil ----------
@@ -1979,19 +2050,12 @@
           row.appendChild(hist);
         }
       } else {
-        const lvlSel = document.createElement('select');
-        lvlSel.className = 'level-select';
-        for (let i = 1; i <= 5; i++) {
-          const o = document.createElement('option');
-          o.value = i; o.textContent = 'Niv. ' + i;
-          if (st.levels[currentSport] === i) o.selected = true;
-          lvlSel.appendChild(o);
-        }
-        lvlSel.addEventListener('change', () => {
-          st.levels[currentSport] = parseInt(lvlSel.value, 10);
+        const lvlOptions = [1, 2, 3, 4, 5].map(i => ({ value: i, label: 'Niv. ' + i }));
+        const lvlBox = makeDropdown(lvlOptions, () => st.levels[currentSport], (v) => {
+          st.levels[currentSport] = parseInt(v, 10);
           saveDB();
-        });
-        row.appendChild(lvlSel);
+        }, 'dd-lvl');
+        row.appendChild(lvlBox);
       }
 
       rosterTeam.appendChild(row);
