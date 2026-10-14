@@ -543,6 +543,7 @@
     <div class="class-row">
       <select id="classSelectEval" aria-label="Classe"></select>
       <button class="btn secondary" id="exportAllBtn" type="button" style="display:none;">📦 Export complet de la classe</button>
+      <button class="btn secondary" id="blankGridBtn" type="button" style="display:none;">📄 Grille vierge (PDF à envoyer)</button>
     </div>
     <p class="card-note" id="evalExportNote" style="display:none;">Export possible pour chaque élève, ou pour toute la classe en un seul document (comme la grille CCF).</p>
     <div id="evalRosterEmpty" class="roster-empty" style="display:none;">Aucun élève dans cette classe.</div>
@@ -951,6 +952,7 @@
   const classSelectEval = document.getElementById('classSelectEval');
   const evalExportNote = document.getElementById('evalExportNote');
   const exportAllBtn = document.getElementById('exportAllBtn');
+  const blankGridBtn = document.getElementById('blankGridBtn');
   const evalRoster = document.getElementById('evalRoster');
   const evalRosterEmpty = document.getElementById('evalRosterEmpty');
 
@@ -2296,7 +2298,12 @@
     const exportable = (def.kind === 'aflp' || def.kind === 'flat');
     evalExportNote.style.display = exportable ? 'block' : 'none';
     exportAllBtn.style.display = exportable ? 'inline-block' : 'none';
+    blankGridBtn.style.display = def.kind === 'flat' ? 'inline-block' : 'none';
   }
+  blankGridBtn.addEventListener('click', () => {
+    const def = EVAL_DEFS[evalSport].niveaux[evalNiveau];
+    if (def.kind === 'flat') openPrintWindow('Grille vierge — ' + EVAL_DEFS[evalSport].label, buildBlankFlatGridHtml(def.config));
+  });
 
   classSelectEval.addEventListener('change', () => {
     evalClass = classSelectEval.value;
@@ -2821,8 +2828,28 @@
       noteRow.appendChild(document.createTextNode(' / ' + fmtNum(crit.max)));
       wrap.appendChild(noteRow);
 
+      const cm = document.createElement('textarea');
+      cm.rows = 2;
+      cm.placeholder = 'Commentaire sur ce critère (facultatif)';
+      cm.style.cssText = 'width:100%;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:0.85rem;resize:vertical;';
+      cm.value = ev[crit.key + '_comment'] || '';
+      cm.addEventListener('input', () => { ev[crit.key + '_comment'] = cm.value; saveDB(); });
+      wrap.appendChild(cm);
+
       container.appendChild(wrap);
     });
+
+    const gLabel = document.createElement('div');
+    gLabel.style.cssText = 'font-weight:600;font-size:0.9rem;margin:6px 0 6px;';
+    gLabel.textContent = 'Commentaire général / appréciation';
+    container.appendChild(gLabel);
+    const gc = document.createElement('textarea');
+    gc.rows = 4;
+    gc.placeholder = 'Appréciation générale, conseils pour progresser…';
+    gc.style.cssText = 'width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:0.9rem;resize:vertical;';
+    gc.value = ev.comment_general || '';
+    gc.addEventListener('input', () => { ev.comment_general = gc.value; saveDB(); });
+    container.appendChild(gc);
 
     const total = computeFlatTotal(ev, gridDef.criteres);
     const totalRow = document.createElement('div');
@@ -2863,6 +2890,9 @@
           escapeHtml(lvl.text) + ' (' + fmtRange(lvl.range) + ')' + (isSel ? ' ✓' : '') + '</td>';
       });
       rows += '<td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700;">' + (ev[crit.key] != null ? fmtNum(ev[crit.key]) : '') + ' / ' + fmtNum(crit.max) + '</td></tr>';
+      if (ev[crit.key + '_comment']) {
+        rows += '<tr><td colspan="' + (gridDef.levelNames.length + 2) + '" style="border:1px solid #999;padding:5px 8px;font-size:0.76rem;font-style:italic;color:#333;"><b>Commentaire — ' + escapeHtml(crit.label.split('—')[0].trim()) + ' :</b> ' + escapeHtml(ev[crit.key + '_comment']) + '</td></tr>';
+      }
     });
 
     return '<div style="max-width:820px;margin:0 auto 20px;' + (withPageBreak ? 'page-break-after:always;' : '') + '">' +
@@ -2877,6 +2907,30 @@
       '</table>' +
       '<div style="margin-top:16px;padding-top:14px;border-top:3px solid #1C2B33;font-family:Oswald,sans-serif;font-size:1.2rem;font-weight:700;">NOTE TOTALE : ' + (total != null ? fmtNum(total) : '______') + ' / 20</div>' +
       '<div style="margin-top:30px;font-size:0.85rem;"><strong>Observations / commentaire de l\'évaluateur :</strong></div>' +
+      (ev.comment_general ? '<div style="margin-top:6px;font-size:0.85rem;white-space:pre-wrap;border:1px solid #999;padding:8px;">' + escapeHtml(ev.comment_general) + '</div>' : '<div style="height:90px;border:1px solid #999;margin-top:6px;"></div>') +
+      '</div>';
+  }
+
+  // Grille vierge (à envoyer aux élèves) : critères, niveaux et barème, sans note.
+  function buildBlankFlatGridHtml(gridDef) {
+    let rows = '';
+    gridDef.criteres.forEach(crit => {
+      rows += '<tr><td style="border:1px solid #777;padding:7px;vertical-align:top;width:140px;"><b>' + escapeHtml(crit.label) + '</b><br><span style="font-size:0.75rem;">/ ' + fmtNum(crit.max) + ' pts</span></td>';
+      crit.levels.forEach(lvl => {
+        rows += '<td style="border:1px solid #777;padding:7px;vertical-align:top;font-size:0.76rem;">' + escapeHtml(lvl.text) + '<div style="margin-top:4px;font-weight:700;">' + fmtRange(lvl.range) + ' pts</div></td>';
+      });
+      rows += '<td style="border:1px solid #777;padding:7px;text-align:center;width:70px;">&nbsp;<br>/ ' + fmtNum(crit.max) + '</td></tr>';
+    });
+    return '<div style="max-width:1000px;margin:0 auto;">' +
+      '<h1 style="font-family:Oswald,Arial,sans-serif;font-size:1.25rem;margin:0 0 4px;">' + escapeHtml(gridDef.title || "Grille d'évaluation") + '</h1>' +
+      (gridDef.subtitle ? '<p style="font-size:0.8rem;color:#333;margin:0 0 12px;">' + escapeHtml(gridDef.subtitle) + '</p>' : '') +
+      '<p style="margin:0 0 12px;"><strong>Nom, prénom :</strong> ______________________________ &nbsp; <strong>Classe :</strong> ____________ &nbsp; <strong>Date :</strong> ____ / ____ / ________</p>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">' +
+      '<tr><td style="border:1px solid #777;padding:7px;background:#e8e8e8;"><b>Critère évalué</b></td>' +
+      gridDef.levelNames.map(n => '<td style="border:1px solid #777;padding:7px;background:#e8e8e8;text-align:center;"><b>' + n + '</b></td>').join('') +
+      '<td style="border:1px solid #777;padding:7px;background:#e8e8e8;text-align:center;"><b>Points</b></td></tr>' + rows + '</table>' +
+      '<div style="margin-top:14px;font-family:Oswald,Arial,sans-serif;font-size:1.1rem;font-weight:700;">NOTE TOTALE : ______ / 20</div>' +
+      '<div style="margin-top:14px;font-size:0.85rem;"><strong>Observations / commentaire de l\'évaluateur :</strong></div><div style="height:90px;border:1px solid #777;margin-top:6px;"></div>' +
       '</div>';
   }
 
