@@ -522,10 +522,11 @@
   <div class="card">
     <h2>Évaluation</h2>
     <p class="card-note">Choisissez la pratique.</p>
-    <div class="sport-grid" id="evalSportGrid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="sport-grid" id="evalSportGrid" style="grid-template-columns:repeat(5,1fr);">
       <button type="button" class="sport-btn active" data-eval-sport="badminton"><span class="emoji">🏸</span>Badminton</button>
       <button type="button" class="sport-btn" data-eval-sport="rugby"><span class="emoji">🏉</span>Rugby</button>
       <button type="button" class="sport-btn" data-eval-sport="basket3x3"><span class="emoji">🏀</span>Basket 3x3</button>
+      <button type="button" class="sport-btn" data-eval-sport="volley"><span class="emoji">🏐</span>Volley</button>
       <button type="button" class="sport-btn" data-eval-sport="escalade"><span class="emoji">🧗</span>Escalade</button>
     </div>
   </div>
@@ -860,6 +861,46 @@
   };
 
   // Registre reliant chaque pratique / niveau à sa grille et son type de rendu.
+  const EVAL_VOLLEY_3EME = {
+    title: "Grille d'évaluation — Volley-ball (3ème)",
+    subtitle: 'CA4 : Conduire et maîtriser un affrontement collectif — match en 4 contre 4 / 6 contre 6',
+    levelNames: ['Non atteint', 'Partiellement atteint', 'Atteint', 'Dépassé'],
+    criteres: [
+      { key: 'technique', label: "Maîtriser les gestes techniques (service, manchette, passe haute, attaque)", max: 5,
+        levels: [
+          { text: "Gestes inefficaces : balle rarement contrôlée, service souvent raté", range: [0, 1] },
+          { text: "Gestes connus mais irréguliers : manchette / passe approximatives, service peu sûr", range: [1.5, 2.5] },
+          { text: "Gestes maîtrisés en situation : service sûr, manchette et passe orientées vers un partenaire", range: [3, 4] },
+          { text: "Gestes précis et variés : service placé, passe haute vers l'attaquant, attaque ou renvoi gagnant", range: [4.5, 5] }
+        ]
+      },
+      { key: 'tactique', label: "S'organiser collectivement (placement, déplacements, 3 touches de balle)", max: 5,
+        levels: [
+          { text: "Reste statique, renvoie la balle directement sans construction", range: [0, 1] },
+          { text: "Se déplace tardivement, utilise parfois 2 touches, rotation mal connue", range: [1.5, 2.5] },
+          { text: "Se place et se déplace vers la balle, construit l'attaque en 3 touches, applique la rotation", range: [3, 4] },
+          { text: "Anticipe, communique (appels), choisit la zone libre adverse pour marquer le point", range: [4.5, 5] }
+        ]
+      },
+      { key: 'efficacite', label: "Être efficace dans le match (gagner l'échange, limiter ses fautes)", max: 5,
+        levels: [
+          { text: "Nombreuses fautes directes, peu d'échanges gagnés", range: [0, 1] },
+          { text: "Échanges gagnés de façon irrégulière, fautes fréquentes", range: [1.5, 2.5] },
+          { text: "Contribue régulièrement aux points de l'équipe, fautes limitées", range: [3, 4] },
+          { text: "Fait la différence : points gagnés par ses choix, très peu de fautes directes", range: [4.5, 5] }
+        ]
+      },
+      { key: 'role', label: "Assumer un rôle social (arbitre / marqueur / coach) et respecter règles et adversaires", max: 5,
+        levels: [
+          { text: "Refuse ou néglige le rôle, comportement irrespectueux ou contestation", range: [0, 1] },
+          { text: "Rôle assuré avec difficulté, respect inconstant", range: [1.5, 2.5] },
+          { text: "Rôle assuré correctement (score, fautes de filet / de touche), respect des règles et des autres", range: [3, 4] },
+          { text: "Rôle assuré avec rigueur et autorité, fair-play exemplaire, encourage ses partenaires", range: [4.5, 5] }
+        ]
+      }
+    ]
+  };
+
   const EVAL_DEFS = {
     badminton: {
       label: 'Badminton',
@@ -879,6 +920,12 @@
       niveaux: {
         bac: { kind: 'flat', label: '2nde NJPF (Bac Pro)', config: EVAL_BASKET_NJPF },
         college: { kind: 'flat', label: '4ème', config: EVAL_BASKET_4EME }
+      }
+    },
+    volley: {
+      label: 'Volley',
+      niveaux: {
+        college: { kind: 'flat', label: '3ème', config: EVAL_VOLLEY_3EME }
       }
     },
     escalade: {
@@ -2336,6 +2383,8 @@
     if (!st.eval.basket3x3) st.eval.basket3x3 = {};
     if (!st.eval.basket3x3.bac) st.eval.basket3x3.bac = {};
     if (!st.eval.basket3x3.college) st.eval.basket3x3.college = {};
+    if (!st.eval.volley) st.eval.volley = {};
+    if (!st.eval.volley.college) st.eval.volley.college = {};
     if (!st.eval.escalade) st.eval.escalade = {};
     if (!st.eval.escalade.btsa) st.eval.escalade.btsa = {};
   }
