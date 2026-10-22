@@ -901,6 +901,11 @@
     ]
   };
 
+  const EVAL_VOLLEY_3EME_MI = Object.assign({}, EVAL_VOLLEY_3EME, {
+    title: "Grille d'évaluation — Volley-ball (3ème) — Mi-cycle",
+    subtitle: 'Évaluation formative de mi-cycle · CA4 : Conduire et maîtriser un affrontement collectif'
+  });
+
   const EVAL_DEFS = {
     badminton: {
       label: 'Badminton',
@@ -925,7 +930,8 @@
     volley: {
       label: 'Volley',
       niveaux: {
-        college: { kind: 'flat', label: '3ème', config: EVAL_VOLLEY_3EME }
+        mi: { kind: 'flat', label: '3ème — mi-cycle', config: EVAL_VOLLEY_3EME_MI },
+        college: { kind: 'flat', label: '3ème — fin de cycle', config: EVAL_VOLLEY_3EME }
       }
     },
     escalade: {
@@ -2384,6 +2390,7 @@
     if (!st.eval.basket3x3.bac) st.eval.basket3x3.bac = {};
     if (!st.eval.basket3x3.college) st.eval.basket3x3.college = {};
     if (!st.eval.volley) st.eval.volley = {};
+    if (!st.eval.volley.mi) st.eval.volley.mi = {};
     if (!st.eval.volley.college) st.eval.volley.college = {};
     if (!st.eval.escalade) st.eval.escalade = {};
     if (!st.eval.escalade.btsa) st.eval.escalade.btsa = {};
