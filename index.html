@@ -901,10 +901,34 @@
     ]
   };
 
-  const EVAL_VOLLEY_3EME_MI = Object.assign({}, EVAL_VOLLEY_3EME, {
-    title: "Grille d'évaluation — Volley-ball (3ème) — Mi-cycle",
-    subtitle: 'Évaluation formative de mi-cycle · CA4 : Conduire et maîtriser un affrontement collectif'
-  });
+  const EVAL_VOLLEY_3EME_MI = {
+    title: "Fiche d'évaluation — Volley-ball (3ème) — Mi-cycle : construction d'attaque",
+    subtitle: "Observation de la construction d'attaque (réception, passe, attaque) · note sur 10 · issue du ballon : Bloqué −0,5 pt · Rebond −0,25 pt · Rien 0 (déduit de la note)",
+    levelNames: ['Insuffisant', 'Fragile', 'Correct', 'Réussi'],
+    criteres: [
+      { key: 'reception', issues: true, label: "Réception — qualité de la réception", max: 3,
+        levels: [
+          { text: "Balle basse et loin du passeur", range: [0, 0] },
+          { text: "Balle haute mais loin du passeur", range: [1, 1] },
+          { text: "Balle basse sur le passeur", range: [2, 2] },
+          { text: "Balle haute et sur le passeur", range: [3, 3] }
+        ] },
+      { key: 'passe', issues: true, label: "Passeur — qualité de la passe", max: 3,
+        levels: [
+          { text: "Passe basse loin de mon attaquant", range: [0, 0] },
+          { text: "Passe haute loin de mon attaquant", range: [1, 1] },
+          { text: "Passe basse sur mon attaquant", range: [2, 2] },
+          { text: "Passe haute sur mon attaquant", range: [3, 3] }
+        ] },
+      { key: 'attaque', issues: true, label: "Attaquant — qualité de l'attaque", max: 4,
+        levels: [
+          { text: "Ne réussit pas à attaquer", range: [0, 0] },
+          { text: "Effectue juste un renvoi", range: [1, 1] },
+          { text: "Attaque son ballon mais il atterrit dehors", range: [2, 2] },
+          { text: "Attaque son ballon et le met sur le terrain", range: [4, 4] }
+        ] }
+    ]
+  };
 
   const EVAL_DEFS = {
     badminton: {
@@ -2439,7 +2463,7 @@
       const badge = document.createElement('span');
       badge.className = 'summary-chip';
       badge.id = 'evalBadge-' + st.id;
-      if (total != null) { badge.classList.add('amberc'); badge.textContent = String(total.toFixed(1)).replace('.', ',') + ' / 20'; }
+      if (total != null) { badge.classList.add('amberc'); badge.textContent = fmtNum(total) + ' / ' + evalMaxFor(evalSport, evalNiveau); }
       else { badge.textContent = 'Non noté'; }
       badgeWrap.appendChild(badge);
       const chevron = document.createElement('span');
@@ -2471,11 +2495,17 @@
     });
   }
 
+  function evalMaxFor(sp, nv) {
+    const d = EVAL_DEFS[sp] && EVAL_DEFS[sp].niveaux[nv];
+    if (d && d.kind === 'flat') return d.config.criteres.reduce((a, c) => a + c.max, 0);
+    return 20;
+  }
+
   function updateEvalRowBadge(st) {
     const badge = document.getElementById('evalBadge-' + st.id);
     if (!badge) return;
     const total = currentEvalTotal(st);
-    if (total != null) { badge.classList.add('amberc'); badge.textContent = String(total.toFixed(1)).replace('.', ',') + ' / 20'; }
+    if (total != null) { badge.classList.add('amberc'); badge.textContent = fmtNum(total) + ' / ' + evalMaxFor(evalSport, evalNiveau); }
     else { badge.classList.remove('amberc'); badge.textContent = 'Non noté'; }
   }
 
@@ -2487,8 +2517,8 @@
     return [lo, hi];
   }
   function rangeMid(range) { return Math.round(((range[0] + range[1]) / 2) * 2) / 2; }
-  function fmtNum(n) { return (n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ',')); }
-  function fmtRange(range) { return fmtNum(range[0]) + ' → ' + fmtNum(range[1]) + ' pts'; }
+  function fmtNum(n) { return (n % 1 === 0 ? String(n) : (Math.round(n * 100) / 100).toString().replace('.', ',')); }
+  function fmtRange(range) { if (range[0] === range[1]) return fmtNum(range[0]) + (range[0] > 1 ? ' pts' : ' pt'); return fmtNum(range[0]) + ' → ' + fmtNum(range[1]) + ' pts'; }
 
   function buildAflpBlock(def, max, current, onSet, onComment) {
     const wrap = document.createElement('div');
@@ -2811,10 +2841,16 @@
   }
 
   // -- Grilles "plates" (Basket 3x3) : total, formulaire, export --
+  // Issue du ballon (fiche volley mi-cycle) : malus déduit de la note
+  const ISSUE_MALUS = { bloque: 0.5, rebond: 0.25, rien: 0 };
+  const ISSUE_LABEL = { bloque: 'Bloqué', rebond: 'Rebond', rien: 'Rien' };
+  function issueMalus(ev, crit) { return crit.issues ? (ISSUE_MALUS[ev[crit.key + '_issue']] || 0) : 0; }
+
   function computeFlatTotal(ev, criteres) {
     const hasAny = criteres.some(c => ev[c.key] != null);
     if (!hasAny) return null;
-    return criteres.reduce((s, c) => s + (ev[c.key] || 0), 0);
+    const t = criteres.reduce((s, c) => s + (ev[c.key] || 0) - (ev[c.key] != null ? issueMalus(ev, c) : 0), 0);
+    return Math.max(0, t);
   }
 
   function renderFlatForm(container, st, gridDef, ev) {
@@ -2884,6 +2920,28 @@
       noteRow.appendChild(document.createTextNode(' / ' + fmtNum(crit.max)));
       wrap.appendChild(noteRow);
 
+      if (crit.issues) {
+        const isRow = document.createElement('div');
+        isRow.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;';
+        const isLab = document.createElement('span');
+        isLab.style.cssText = 'font-size:0.85rem;color:var(--ink-soft);';
+        isLab.textContent = 'Issue du ballon :';
+        isRow.appendChild(isLab);
+        [['bloque', 'Bloqué (−0,5)'], ['rebond', 'Rebond (−0,25)'], ['rien', 'Rien (0)']].forEach(([k, lab]) => {
+          const ib = document.createElement('button');
+          ib.type = 'button';
+          ib.className = 'sport-btn' + (ev[crit.key + '_issue'] === k ? ' active' : '');
+          ib.style.cssText = 'flex:0 0 auto;padding:6px 12px;';
+          ib.textContent = lab;
+          ib.addEventListener('click', () => {
+            ev[crit.key + '_issue'] = (ev[crit.key + '_issue'] === k) ? null : k;
+            saveDB(); renderFlatForm(container, st, gridDef, ev); updateEvalRowBadge(st);
+          });
+          isRow.appendChild(ib);
+        });
+        wrap.appendChild(isRow);
+      }
+
       const cm = document.createElement('textarea');
       cm.rows = 2;
       cm.placeholder = 'Commentaire sur ce critère (facultatif)';
@@ -2920,7 +2978,7 @@
     totalVal.style.fontWeight = '700';
     totalVal.style.fontSize = '1.3rem';
     totalVal.style.color = 'var(--gold)';
-    totalVal.textContent = (total == null ? '—' : fmtNum(total)) + ' / 20';
+    totalVal.textContent = (total == null ? '—' : fmtNum(total)) + ' / ' + fmtNum(gridDef.criteres.reduce((a, c) => a + c.max, 0));
     totalRow.appendChild(totalLabel);
     totalRow.appendChild(totalVal);
     container.appendChild(totalRow);
@@ -2945,7 +3003,7 @@
         rows += '<td style="border:1px solid #999;padding:6px;vertical-align:top;font-size:0.76rem;' + (isSel ? 'background:#F0DEC3;font-weight:600;' : '') + '">' +
           escapeHtml(lvl.text) + ' (' + fmtRange(lvl.range) + ')' + (isSel ? ' ✓' : '') + '</td>';
       });
-      rows += '<td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700;">' + (ev[crit.key] != null ? fmtNum(ev[crit.key]) : '') + ' / ' + fmtNum(crit.max) + '</td></tr>';
+      rows += '<td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700;">' + (ev[crit.key] != null ? fmtNum(ev[crit.key]) : '') + ' / ' + fmtNum(crit.max) + (crit.issues && ev[crit.key + '_issue'] ? '<div style="font-weight:400;font-size:0.72rem;">' + ISSUE_LABEL[ev[crit.key + '_issue']] + (issueMalus(ev, crit) ? ' −' + fmtNum(issueMalus(ev, crit)) : '') + '</div>' : '') + '</td></tr>';
       if (ev[crit.key + '_comment']) {
         rows += '<tr><td colspan="' + (gridDef.levelNames.length + 2) + '" style="border:1px solid #999;padding:5px 8px;font-size:0.76rem;font-style:italic;color:#333;"><b>Commentaire — ' + escapeHtml(crit.label.split('—')[0].trim()) + ' :</b> ' + escapeHtml(ev[crit.key + '_comment']) + '</td></tr>';
       }
@@ -2961,7 +3019,7 @@
       '<td style="border:1px solid #999;padding:6px;background:#eee;text-align:center;">Points</td></tr>' +
       rows +
       '</table>' +
-      '<div style="margin-top:16px;padding-top:14px;border-top:3px solid #1C2B33;font-family:Oswald,sans-serif;font-size:1.2rem;font-weight:700;">NOTE TOTALE : ' + (total != null ? fmtNum(total) : '______') + ' / 20</div>' +
+      '<div style="margin-top:16px;padding-top:14px;border-top:3px solid #1C2B33;font-family:Oswald,sans-serif;font-size:1.2rem;font-weight:700;">NOTE TOTALE : ' + (total != null ? fmtNum(total) : '______') + ' / ' + fmtNum(gridDef.criteres.reduce((a, c) => a + c.max, 0)) + '</div>' +
       '<div style="margin-top:30px;font-size:0.85rem;"><strong>Observations / commentaire de l\'évaluateur :</strong></div>' +
       (ev.comment_general ? '<div style="margin-top:6px;font-size:0.85rem;white-space:pre-wrap;border:1px solid #999;padding:8px;">' + escapeHtml(ev.comment_general) + '</div>' : '<div style="height:90px;border:1px solid #999;margin-top:6px;"></div>') +
       '</div>';
@@ -2971,9 +3029,9 @@
   function buildBlankFlatGridHtml(gridDef) {
     let rows = '';
     gridDef.criteres.forEach(crit => {
-      rows += '<tr><td style="border:1px solid #777;padding:7px;vertical-align:top;width:140px;"><b>' + escapeHtml(crit.label) + '</b><br><span style="font-size:0.75rem;">/ ' + fmtNum(crit.max) + ' pts</span></td>';
+      rows += '<tr><td style="border:1px solid #777;padding:7px;vertical-align:top;width:140px;"><b>' + escapeHtml(crit.label) + '</b><br><span style="font-size:0.75rem;">/ ' + fmtNum(crit.max) + ' pts</span>' + (crit.issues ? '<div style="font-size:0.72rem;margin-top:6px;">Issue du ballon :<br>☐ Bloqué (−0,5)<br>☐ Rebond (−0,25)<br>☐ Rien (0)</div>' : '') + '</td>';
       crit.levels.forEach(lvl => {
-        rows += '<td style="border:1px solid #777;padding:7px;vertical-align:top;font-size:0.76rem;">' + escapeHtml(lvl.text) + '<div style="margin-top:4px;font-weight:700;">' + fmtRange(lvl.range) + ' pts</div></td>';
+        rows += '<td style="border:1px solid #777;padding:7px;vertical-align:top;font-size:0.76rem;">' + escapeHtml(lvl.text) + '<div style="margin-top:4px;font-weight:700;">' + fmtRange(lvl.range) + '</div></td>';
       });
       rows += '<td style="border:1px solid #777;padding:7px;text-align:center;width:70px;">&nbsp;<br>/ ' + fmtNum(crit.max) + '</td></tr>';
     });
@@ -2985,7 +3043,7 @@
       '<tr><td style="border:1px solid #777;padding:7px;background:#e8e8e8;"><b>Critère évalué</b></td>' +
       gridDef.levelNames.map(n => '<td style="border:1px solid #777;padding:7px;background:#e8e8e8;text-align:center;"><b>' + n + '</b></td>').join('') +
       '<td style="border:1px solid #777;padding:7px;background:#e8e8e8;text-align:center;"><b>Points</b></td></tr>' + rows + '</table>' +
-      '<div style="margin-top:14px;font-family:Oswald,Arial,sans-serif;font-size:1.1rem;font-weight:700;">NOTE TOTALE : ______ / 20</div>' +
+      '<div style="margin-top:14px;font-family:Oswald,Arial,sans-serif;font-size:1.1rem;font-weight:700;">NOTE TOTALE : ______ / ' + fmtNum(gridDef.criteres.reduce((a, c) => a + c.max, 0)) + '</div>' +
       '<div style="margin-top:14px;font-size:0.85rem;"><strong>Observations / commentaire de l\'évaluateur :</strong></div><div style="height:90px;border:1px solid #777;margin-top:6px;"></div>' +
       '</div>';
   }
@@ -4159,9 +4217,9 @@
     const evs = [];
     Object.keys(EVAL_DEFS).forEach(sp => Object.keys(EVAL_DEFS[sp].niveaux).forEach(nv => {
       const tot = evalTotalFor(st, sp, nv);
-      if (tot != null) evs.push({ lib: EVAL_DEFS[sp].label + ' — ' + EVAL_DEFS[sp].niveaux[nv].label, tot: tot });
+      if (tot != null) evs.push({ lib: EVAL_DEFS[sp].label + ' — ' + EVAL_DEFS[sp].niveaux[nv].label, tot: tot, max: evalMaxFor(sp, nv) });
     }));
-    h += '<h3>Évaluations</h3>' + (evs.length ? '<table><tr><th>Évaluation</th><th>Note</th></tr>' + evs.map(e => '<tr><td>' + escapeHtml(e.lib) + '</td><td><b>' + String(Math.round(e.tot * 10) / 10).replace('.', ',') + ' / 20</b></td></tr>').join('') + '</table>' : '<div style="color:#777;">Aucune note enregistrée.</div>');
+    h += '<h3>Évaluations</h3>' + (evs.length ? '<table><tr><th>Évaluation</th><th>Note</th></tr>' + evs.map(e => '<tr><td>' + escapeHtml(e.lib) + '</td><td><b>' + String(Math.round(e.tot * 10) / 10).replace('.', ',') + ' / ' + e.max + '</b></td></tr>').join('') + '</table>' : '<div style="color:#777;">Aucune note enregistrée.</div>');
 
     // Escalade
     const cl = (db.climbing[className] || {});
